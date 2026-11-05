@@ -25,8 +25,8 @@ services:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - HELLFISH_SALT=<sal-removida>
-      - HOOLIGANS_SALT=<sal-removida>
+      - HELLFISH_SALT=${HELLFISH_SALT:?Definir HELLFISH_SALT en .env}
+      - HOOLIGANS_SALT=${HOOLIGANS_SALT:?Definir HOOLIGANS_SALT en .env}
       - DATA_SOURCE=POSTGRES
       - DB_HOST=postgres
       - DB_PORT=5432

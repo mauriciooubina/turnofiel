@@ -104,9 +104,11 @@ DB_USER=postgres
 DB_PASS=postgres
 
 # Salts Criptográficos (Ley 25.326)
-HELLFISH_SALT=<sal-removida>
-HOOLIGANS_SALT=<sal-removida>
+HELLFISH_SALT=<sal-secreta-hellfish>
+HOOLIGANS_SALT=<sal-secreta-hooligans>
 ```
+
+> Las sales son secretas: definilas solo en tu `.env` local (que no se versiona) y nunca las escribas en el código ni en la documentación.
 
 ### 3. Encender la Infraestructura (PostgreSQL + FastAPI Backend)
 

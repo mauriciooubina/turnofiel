@@ -135,6 +135,8 @@ def run_etl(raw_data_dir: str, processed_data_dir: str):
         salt = get_crypto_salt(shop)
         df_ml['client_hashed'] = df_ml['client'].apply(lambda x: hash_sensitive_data(x, salt))
         df_ml['phone_hashed'] = df_ml['phone'].apply(lambda x: hash_sensitive_data(x, salt))
+        df_ml['created_by'] = df_ml['created_by'].apply(lambda x: hash_sensitive_data(x, salt))
+        df_ml['deleted_by'] = df_ml['deleted_by'].apply(lambda x: hash_sensitive_data(x, salt))
         
         df_ml = df_ml.drop(columns=['client', 'phone'])
 

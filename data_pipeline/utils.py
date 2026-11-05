@@ -9,10 +9,17 @@ def get_crypto_salt(shop_id: str) -> str:
     """
     shop_id_upper = shop_id.upper()
     if "HELLFISH" in shop_id_upper:
-        return os.getenv("HELLFISH_SALT", "<sal-removida>")
+        var_name = "HELLFISH_SALT"
     elif "HOOLIGANS" in shop_id_upper:
-        return os.getenv("HOOLIGANS_SALT", "<sal-removida>")
-    return os.getenv(f"{shop_id_upper}_SALT", "<sal-removida>")
+        var_name = "HOOLIGANS_SALT"
+    else:
+        var_name = f"{shop_id_upper}_SALT"
+    salt = os.getenv(var_name)
+    if not salt:
+        raise RuntimeError(
+            f"Falta la variable de entorno {var_name}. Definila en el archivo .env (ver .env.example)."
+        )
+    return salt
 
 
 def hash_sensitive_data(val: str, salt: str) -> str:
