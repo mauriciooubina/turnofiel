@@ -96,8 +96,9 @@ def predict_appointment_risk(
             
             prob = float(model.predict_proba(features)[0, 1])
             
-            # Calibración de umbrales optimizada para maximizar F1 en clases desbalanceadas
-            if prob >= 0.40:
+            # Umbral de 0,50 alineado con la evaluación de train_models.py (predict()),
+            # con la que se calcularon las métricas informadas. Banda media desde 0,20.
+            if prob >= 0.50:
                 return "ALTO", "#ef4444", round(prob, 4)
             elif prob >= 0.20:
                 return "MEDIO", "#f59e0b", round(prob, 4)

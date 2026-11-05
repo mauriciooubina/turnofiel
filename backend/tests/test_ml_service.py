@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import pandas as pd
 from unittest.mock import patch
 from app.services.ml_service import get_ml_model, predict_appointment_risk
@@ -122,3 +123,18 @@ def test_predict_fallback_when_exception_in_prediction():
     assert risk == "ALTO"
     assert prob == 0.75
     patch.stopall()
+
+@pytest.mark.parametrize("prob,expected", [
+    (0.19, "BAJO"),
+    (0.20, "MEDIO"),
+    (0.49, "MEDIO"),
+    (0.50, "ALTO"),
+])
+def test_predict_risk_bands_thresholds(prob, expected):
+    with patch("app.services.ml_service.get_ml_model") as mock_get_model:
+        mock_get_model.return_value.predict_proba.return_value = np.array([[1 - prob, prob]])
+        row = pd.Series({"lead_time_hours": 24.0, "is_self_booked": 0, "barber_active": True})
+        risk, _, return_prob = predict_appointment_risk(row)
+        assert risk == expected
+        assert return_prob == round(prob, 4)
+
