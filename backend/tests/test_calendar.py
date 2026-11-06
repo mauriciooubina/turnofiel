@@ -1,3 +1,6 @@
+import time
+import statistics
+import psycopg2
 import pytest
 from unittest.mock import patch
 from fastapi import HTTPException
@@ -86,4 +89,23 @@ def test_simulate_appointment_riesgo(client):
     assert data["ausentismo_risk"] == "ALTO"
     assert data["color_code"] == "#ef4444"
 
+
+def test_calendar_fallback_http_when_postgres_down(client):
+    with patch("app.services.calendar_service.DATA_SOURCE", "POSTGRES"), \
+         patch("app.services.calendar_service.fetch_appointments_from_db",
+               side_effect=psycopg2.OperationalError("connection refused")):
+        client.get("/api/calendar?shop_id=hellfish")  # calentamiento
+
+        timings_ms = []
+        for _ in range(5):
+            start = time.perf_counter()
+            response = client.get("/api/calendar?shop_id=hellfish")
+            timings_ms.append((time.perf_counter() - start) * 1000)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["shop_id"] == "hellfish"
+        assert data["total_appointments"] > 0
+        assert len(data["appointments"]) == data["total_appointments"]
+        assert statistics.median(timings_ms) < 200.0
 

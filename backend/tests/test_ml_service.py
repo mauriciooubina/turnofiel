@@ -1,3 +1,5 @@
+import time
+import statistics
 import pytest
 import numpy as np
 import pandas as pd
@@ -137,4 +139,42 @@ def test_predict_risk_bands_thresholds(prob, expected):
         risk, _, return_prob = predict_appointment_risk(row)
         assert risk == expected
         assert return_prob == round(prob, 4)
+
+
+def test_predict_documented_high_risk_case():
+    history = pd.DataFrame([{
+        "client_hashed": "repeat_noshow_client",
+        "appointment_start": "2026-04-01 18:00:00",
+        "date": "2026-04-01",
+        "target": 1,
+        "shop_id": "hellfish",
+    }])
+    row = pd.Series({
+        "client_hashed": "repeat_noshow_client",
+        "appointment_start": "2026-05-15 18:00:00",
+        "date": "2026-05-15",
+        "shop_id": "hellfish",
+        "lead_time_hours": 96.0,
+        "hour_of_day": 18,
+        "day_of_week": 4,
+        "month": 5,
+        "barber_id": "1",
+        "barber_active": True,
+        "service_price": 18000.0,
+        "duration": 30,
+        "is_self_booked": 0,
+    })
+    assert get_ml_model() is not None
+
+    risk, color, prob = predict_appointment_risk(row, all_appointments_df=history)
+    assert risk == "ALTO"
+    assert color == "#ef4444"
+    assert prob == pytest.approx(0.68, abs=0.01)
+
+    timings_ms = []
+    for _ in range(20):
+        start = time.perf_counter()
+        predict_appointment_risk(row, all_appointments_df=history)
+        timings_ms.append((time.perf_counter() - start) * 1000)
+    assert statistics.median(timings_ms) < 5.0
 
