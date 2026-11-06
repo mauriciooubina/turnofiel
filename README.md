@@ -59,6 +59,7 @@ pfi/
 │   ├── init_db.py               # Script de creación del esquema relacional e ingesta en PostgreSQL
 │   ├── queuing_theory.py        # Cálculo estocástico de parámetros M/M/s (λ, μ, ρ, Lq, Wq)
 │   ├── train_models.py          # Entrenamiento y comparación de modelos (validación cruzada estratificada)
+│   ├── tune_hyperparams.py      # Búsqueda en grilla de hiperparámetros (valida la configuración de train_models.py)
 │   ├── plots/                   # Gráficos generados (matriz de confusión, curvas ROC)
 │   └── utils.py                 # Auxiliares criptográficos y DateTime
 │
@@ -175,6 +176,12 @@ Los datos procesados de `data/processed/` y el modelo `gradient_boosting_model.j
 ```
 
 > Reentrenar reemplaza el modelo serializado y puede cambiar las métricas reportadas en el documento del PFI.
+
+La búsqueda de hiperparámetros solo usa `data/processed/`, así que se puede correr sin los datos crudos. No reentrena ni reemplaza el modelo: compara la configuración en uso de cada clasificador con la mejor de su grilla y guarda el resultado en `data/processed/hyperparam_search_results.json` (tarda unos 5 minutos).
+
+```bash
+.venv/bin/python data_pipeline/tune_hyperparams.py
+```
 
 ---
 
