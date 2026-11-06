@@ -15,6 +15,7 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+.coverage
 
 # Node / Frontend
 node_modules/
