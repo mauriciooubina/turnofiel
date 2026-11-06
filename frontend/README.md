@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# Frontend — Dashboard TurnoFiel
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Dashboard web en React 19 + TypeScript + Vite que muestra la agenda del día con semaforización de riesgo de ausentismo y las métricas de teoría de colas $M/M/s$ por comercio.
 
-Currently, two official plugins are available:
+## Comandos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install       # instalar dependencias
+npm run dev       # servidor de desarrollo en http://localhost:5173
+npm run build     # chequeo de tipos (tsc -b) + build de producción
+npm run lint      # linter (oxlint)
+npm run preview   # previsualizar el build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Configuración
+
+La URL del backend se toma de la variable `VITE_API_URL`. Si no está definida, se usa `http://localhost:8000`.
+
+## Estructura
+
+- `src/App.tsx`: componente principal, navegación por pestañas y modo fallback.
+- `src/components/`: agenda (`AgendaTimeline`), alertas de ausentismo, métricas de colas, modal de simulación de turnos y notificaciones.
+- `src/data/fallbackData.ts`: datos estáticos usados cuando el backend no responde.
+- `src/types/`: tipos TypeScript de los contratos de la API.
