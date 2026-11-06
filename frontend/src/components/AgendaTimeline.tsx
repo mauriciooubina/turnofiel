@@ -49,10 +49,10 @@ export const AgendaTimeline: React.FC<AgendaTimelineProps> = ({
               <button 
                 className="btn-agendar-turno"
                 onClick={onOpenSimulateModal}
-                title="Agendar nuevo turno"
+                title="Simular turno entrante"
               >
                 <Plus size={15} />
-                Agendar turno
+                Simular turno entrante
               </button>
             )}
           </div>

@@ -4,6 +4,7 @@ import { QueueMetricsColumn } from '@/components/QueueMetricsColumn';
 import { AgendaTimeline } from '@/components/AgendaTimeline';
 import { AbsenteeismAlerts } from '@/components/AbsenteeismAlerts';
 import { ToastNotification } from '@/components/ToastNotification';
+import { ConnectionAlert } from '@/components/ConnectionAlert';
 import { SimulateAppointmentModal } from '@/components/SimulateAppointmentModal';
 import { FALLBACK_QUEUES, FALLBACK_CALENDAR } from '@/data/fallbackData';
 import type { ShopQueueData, Appointment } from '@/types';
@@ -21,6 +22,7 @@ function App() {
   
   const [loading, setLoading] = useState<boolean>(true);
   const [isFallbackMode, setIsFallbackMode] = useState<boolean>(false);
+  const [isConnectionAlertDismissed, setIsConnectionAlertDismissed] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
   
   const [queueMetrics, setQueueMetrics] = useState<ShopQueueData | null>(null);
@@ -53,6 +55,7 @@ function App() {
       
       setAppointments(calendarData.appointments || []);
       setIsFallbackMode(false);
+      setIsConnectionAlertDismissed(false);
     } catch (err) {
       console.warn("FastAPI backend is offline or unreachable. Loading fallback static mock data for demo...");
       setIsFallbackMode(true);
@@ -60,8 +63,8 @@ function App() {
       const currentFallbackShop = FALLBACK_QUEUES.find((q) => q.shop_id === shopId);
       setQueueMetrics(currentFallbackShop || null);
       
-      const shopAppointments = FALLBACK_CALENDAR[shopId] || [];
-      setAppointments(shopAppointments);
+      const snapshot = FALLBACK_CALENDAR[shopId];
+      setAppointments(snapshot.date === date ? snapshot.appointments : []);
     } finally {
       setLoading(false);
     }
@@ -103,6 +106,13 @@ function App() {
   return (
     <div className="app-container">
       
+      {/* Fallback Connection Alert */}
+      <ConnectionAlert 
+        visible={isFallbackMode && !isConnectionAlertDismissed} 
+        snapshotDate={FALLBACK_CALENDAR[shopId].date} 
+        onClose={() => setIsConnectionAlertDismissed(true)} 
+      />
+
       {/* Notification popup alert */}
       <ToastNotification message={toastMessage} />
 

@@ -16,6 +16,8 @@ export interface ShopQueueData {
   mu_rate: number;
   servers: number;
   metrics: QueueMetrics;
+  active_barbers?: string[] | null;
+  inactive_barbers?: string[] | null;
 }
 
 export interface Appointment {

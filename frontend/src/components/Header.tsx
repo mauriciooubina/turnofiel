@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Calendar as CalendarIcon, BarChart2, AlertCircle } from 'lucide-react';
+import { RefreshCw, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff } from 'lucide-react';
 import logoImg from '@/assets/logo.jpg';
 
 interface HeaderProps {
@@ -29,9 +29,13 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 1. Left: Brand Identity (Logo Rectangular) */}
       <div className="navbar-brand">
         <img src={logoImg} alt="TurnoFiel" className="navbar-logo-img" />
-        {isFallbackMode && (
-          <span className="navbar-status-badge fallback" title="Modo degradación local">
-            <AlertCircle size={11} /> Fallback
+        {isFallbackMode ? (
+          <span className="navbar-status-badge fallback" title="Sin conexión con el backend: datos locales de respaldo">
+            <WifiOff size={11} /> Modalidad Local Demo
+          </span>
+        ) : (
+          <span className="navbar-status-badge live" title="Conectado al backend">
+            <Wifi size={11} /> Live API
           </span>
         )}
       </div>

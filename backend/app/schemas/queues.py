@@ -1,3 +1,4 @@
+from typing import List, Optional
 from pydantic import BaseModel
 
 class QueueMetricsResponse(BaseModel):
@@ -17,3 +18,6 @@ class ShopQueueData(BaseModel):
     mu_rate: float
     servers: int
     metrics: QueueMetricsResponse
+    active_barbers: Optional[List[str]] = None
+    inactive_barbers: Optional[List[str]] = None
+

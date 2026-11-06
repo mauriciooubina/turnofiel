@@ -48,6 +48,25 @@ def fetch_appointments_from_db(shop_id: str, date: str = None) -> pd.DataFrame:
     conn.close()
     return df
 
+def fetch_barbers_by_shop_from_db():
+    """Obtiene barberos activos e inactivos por comercio desde la base de datos."""
+    conn = get_db_connection()
+    query = "SELECT shop_id, id, name, active FROM barbers ORDER BY shop_id, id;"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    
+    result = {}
+    for _, row in df.iterrows():
+        shop_id = str(row["shop_id"])
+        if shop_id not in result:
+            result[shop_id] = {"active": [], "inactive": []}
+        name = str(row["name"])
+        if bool(row["active"]):
+            result[shop_id]["active"].append(name)
+        else:
+            result[shop_id]["inactive"].append(name)
+    return result
+
 def fetch_queue_metrics_from_db():
     conn = get_db_connection()
     query = "SELECT * FROM queue_metrics;"
@@ -73,4 +92,18 @@ def fetch_queue_metrics_from_db():
                 "stable": bool(row["stable"])
             }
         })
+
+    try:
+        barbers = fetch_barbers_by_shop_from_db()
+        for item in result:
+            shop_barbers = barbers.get(item["shop_id"])
+            if shop_barbers:
+                item["active_barbers"] = shop_barbers["active"]
+                item["inactive_barbers"] = shop_barbers["inactive"]
+            else:
+                item["active_barbers"] = None
+                item["inactive_barbers"] = None
+    except Exception:
+        pass
+
     return result

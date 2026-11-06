@@ -1,7 +1,12 @@
 import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
-from app.services.db_service import get_db_connection, fetch_appointments_from_db, fetch_queue_metrics_from_db
+from app.services.db_service import (
+    get_db_connection,
+    fetch_appointments_from_db,
+    fetch_queue_metrics_from_db,
+    fetch_barbers_by_shop_from_db
+)
 
 def test_get_db_connection_live():
     try:
@@ -70,3 +75,52 @@ def test_fetch_queue_metrics_from_db_live_or_mock():
                 assert isinstance(metrics, list)
                 assert metrics[0]["shop_id"] == "hellfish"
                 assert metrics[0]["metrics"]["stable"] is True
+
+def test_fetch_barbers_by_shop_from_db_groups_by_active():
+    with patch("psycopg2.connect") as mock_connect:
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        with patch("pandas.read_sql_query") as mock_read_sql:
+            mock_read_sql.return_value = pd.DataFrame([
+                {"shop_id": "hellfish", "id": 1, "name": "Facundo (Yayu)", "active": True},
+                {"shop_id": "hellfish", "id": 3, "name": "Alan", "active": False},
+                {"shop_id": "hooligans", "id": 4, "name": "Valen", "active": False},
+                {"shop_id": "hooligans", "id": 5, "name": "Valentino", "active": True},
+            ])
+            result = fetch_barbers_by_shop_from_db()
+            expected = {
+                "hellfish": {
+                    "active": ["Facundo (Yayu)"],
+                    "inactive": ["Alan"]
+                },
+                "hooligans": {
+                    "active": ["Valentino"],
+                    "inactive": ["Valen"]
+                }
+            }
+            assert result == expected
+
+def test_fetch_queue_metrics_survives_barbers_error():
+    with patch("psycopg2.connect") as mock_connect:
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        with patch("pandas.read_sql_query") as mock_read_sql:
+            mock_read_sql.return_value = pd.DataFrame([{
+                "shop_id": "hellfish",
+                "lambda_val": 4.5,
+                "mu_val": 2.0,
+                "servers_s": 3,
+                "rho": 0.75,
+                "p0": 0.05,
+                "lq": 0.8,
+                "wq": 0.18,
+                "l_val": 3.05,
+                "w_val": 0.68,
+                "stable": True
+            }])
+            with patch("app.services.db_service.fetch_barbers_by_shop_from_db", side_effect=Exception("x")):
+                metrics = fetch_queue_metrics_from_db()
+                assert isinstance(metrics, list)
+                assert len(metrics) > 0
+                assert metrics[0].get("active_barbers") is None
+

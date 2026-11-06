@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Users, CheckCircle } from 'lucide-react';
+import { TrendingUp, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ShopQueueData } from '@/types';
 import { formatNumber, formatPercent } from '@/utils';
 
@@ -19,7 +19,8 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
     );
   }
 
-  const { lambda_rate, mu_rate, servers, metrics } = queueMetrics;
+  const { lambda_rate, mu_rate, servers, metrics, active_barbers, inactive_barbers } = queueMetrics;
+  const isSaturated = !metrics.stable || metrics.utilization >= 1;
 
   return (
     <div className="view-grid-queues fade-in">
@@ -54,6 +55,16 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {servers} prestadores activos
             </div>
+            {active_barbers && active_barbers.length > 0 && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Activos: {active_barbers.join(', ')}
+              </div>
+            )}
+            {inactive_barbers && inactive_barbers.length > 0 && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Inactivos excluidos del cálculo: {inactive_barbers.join(', ')}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -84,7 +95,10 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
             />
           </div>
           <div className="parameter-explanation">
-            Muestra la intensidad del tráfico en el local. Un valor del {formatPercent(metrics.utilization, 1)} indica que los prestadores están ocupados un tercio de su tiempo operativo, manteniendo margen seguro para absorber la demanda aleatoria.
+            Muestra la intensidad del tráfico en el local. Un valor del {formatPercent(metrics.utilization, 1)} indica que, en promedio, cada prestador está ocupado ese porcentaje de su tiempo operativo.
+            {isSaturated
+              ? ' La demanda iguala o supera la capacidad instalada, por lo que el sistema no alcanza el estado estable.'
+              : ' Mientras se mantenga por debajo del 100 %, queda margen para absorber la demanda aleatoria.'}
           </div>
         </div>
 
@@ -123,10 +137,18 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
             <span className="parameter-symbol">Wq (Minutos)</span>
           </div>
           <div className="parameter-value" style={{ color: '#38bdf8' }}>
-            {formatNumber(metrics.Wq_minutes, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>minutos</span>
+            {isSaturated ? (
+              'No aplica'
+            ) : (
+              <>
+                {formatNumber(metrics.Wq_minutes, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>minutos</span>
+              </>
+            )}
           </div>
           <div className="parameter-explanation">
-            Tiempo promedio que aguarda un cliente en la sala de espera antes de ser atendido. Valores inferiores a 5 minutos reflejan una experiencia de cliente óptima sin demoras acumuladas.
+            {isSaturated
+              ? 'Con ρ ≥ 1,0 el modelo M/M/s no tiene solución en estado estable.'
+              : 'Tiempo promedio que aguarda un cliente en la sala de espera antes de ser atendido. Valores inferiores a 5 minutos reflejan una experiencia de cliente óptima sin demoras acumuladas.'}
           </div>
         </div>
 
@@ -137,10 +159,18 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
             <span className="parameter-symbol">Lq (Personas)</span>
           </div>
           <div className="parameter-value" style={{ color: '#a5b4fc' }}>
-            {formatNumber(metrics.Lq, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>clientes</span>
+            {isSaturated ? (
+              'No aplica'
+            ) : (
+              <>
+                {formatNumber(metrics.Lq, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>clientes</span>
+              </>
+            )}
           </div>
           <div className="parameter-explanation">
-            Cantidad esperada de personas haciendo cola en un instante arbitrario de la jornada. Representa la congestión física dentro de la sala de espera del comercio.
+            {isSaturated
+              ? 'Con ρ ≥ 1,0 el modelo M/M/s no tiene solución en estado estable.'
+              : 'Cantidad esperada de personas haciendo cola en un instante arbitrario de la jornada. Representa la congestión física dentro de la sala de espera del comercio.'}
           </div>
         </div>
 
@@ -151,24 +181,43 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
             <span className="parameter-symbol">P₀ (Porcentaje)</span>
           </div>
           <div className="parameter-value">
-            {formatPercent(metrics.p0, 1)}
+            {isSaturated ? 'No aplica' : formatPercent(metrics.p0, 1)}
           </div>
           <div className="parameter-explanation">
-            Porcentaje del tiempo operativo en el que todos los prestadores activos están libres y no hay clientes aguardando en la recepción del comercio.
+            {isSaturated
+              ? 'Con ρ ≥ 1,0 el modelo M/M/s no tiene solución en estado estable.'
+              : 'Porcentaje del tiempo operativo en el que todos los prestadores activos están libres y no hay clientes aguardando en la recepción del comercio.'}
           </div>
         </div>
 
       </div>
 
       {/* Stability Note Banner */}
-      <div className="column-card" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-        <CheckCircle size={24} style={{ color: 'var(--success)', flexShrink: 0 }} />
+      <div 
+        className="column-card" 
+        style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center', 
+          gap: '16px', 
+          flexWrap: 'wrap',
+          ...(isSaturated ? { border: '1px solid var(--danger)' } : {})
+        }}
+      >
+        {isSaturated ? (
+          <AlertTriangle size={24} style={{ color: 'var(--danger)', flexShrink: 0 }} />
+        ) : (
+          <CheckCircle size={24} style={{ color: 'var(--success)', flexShrink: 0 }} />
+        )}
         <div style={{ flexGrow: 1 }}>
           <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 600 }}>
-            Verificación estocástica de estabilidad: sistema estable (ρ &lt; 1,0)
+            {isSaturated
+              ? 'Indicador de saturación: sistema saturado (ρ ≥ 1,0)'
+              : 'Verificación estocástica de estabilidad: sistema estable (ρ < 1,0)'}
           </h4>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '2px' }}>
-            Dado que el factor de ocupación ρ ({formatPercent(metrics.utilization, 1)}) es menor al 100%, el sistema de {shopId} no genera colas infinitas ni colapso operativo.
+            {isSaturated
+              ? `El factor de ocupación ρ (${formatPercent(metrics.utilization, 1)}) iguala o supera el 100%: la demanda supera la capacidad instalada de ${shopId} y la cola crece sin límite.`
+              : `Dado que el factor de ocupación ρ (${formatPercent(metrics.utilization, 1)}) es menor al 100%, el sistema de ${shopId} no genera colas infinitas ni colapso operativo.`}
           </p>
         </div>
       </div>
@@ -176,3 +225,4 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
     </div>
   );
 };
+

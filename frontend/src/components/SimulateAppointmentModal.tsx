@@ -125,6 +125,10 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
     setAppointmentDate(currentDate);
   }, [shopId, currentDate]);
 
+  useEffect(() => {
+    if (isOpen) setErrorMsg(null);
+  }, [isOpen]);
+
   // Handle service dropdown change with auto-fill
   const handleServiceChange = (name: string) => {
     setServiceName(name);
@@ -215,48 +219,8 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
       onAppointmentCreated(createdApp);
       onClose();
     } catch (err: any) {
-      console.warn('Fallo backend live simulation, creando turno en memoria:', err);
-
-      // Fallback local simulation based on profile and lead time
-      let mockRisk: 'BAJO' | 'MEDIO' | 'ALTO' = 'BAJO';
-      let mockColor = '#10b981';
-
-      if (profile === 'gonzalo') {
-        mockRisk = 'ALTO';
-        mockColor = '#ef4444';
-      } else if (profile === 'matias') {
-        if (leadTimeInfo.hours <= 2) {
-          mockRisk = 'MEDIO';
-          mockColor = '#f59e0b';
-        } else {
-          mockRisk = 'BAJO';
-          mockColor = '#10b981';
-        }
-      } else if (profile === 'tomas') {
-        mockRisk = leadTimeInfo.hours > 48 ? 'MEDIO' : 'BAJO';
-        mockColor = mockRisk === 'MEDIO' ? '#f59e0b' : '#10b981';
-      }
-
-      const fallbackApp: Appointment = {
-        id: Math.floor(9000 + Math.random() * 900),
-        barber_id: barberId,
-        barber_name: barberName,
-        date: appointmentDate,
-        start_time: cleanTime.slice(0, 5),
-        end_time: '16:45',
-        service_name: serviceName,
-        service_price: servicePrice,
-        service_duration: serviceDuration,
-        client_hashed: currentProfileData.name,
-        is_self_booked: bookingChannel === 'WEB' ? 1 : 0,
-        target: null,
-        ausentismo_risk: mockRisk,
-        color_code: mockColor,
-        diagnostic: `${currentProfileData.name} (${currentProfileData.category}) agendó turno con ${leadTimeInfo.label}.`
-      };
-
-      onAppointmentCreated(fallbackApp);
-      onClose();
+      console.warn('Fallo backend al simular turno:', err);
+      setErrorMsg('No se pudo conectar con el backend. El riesgo de cada turno lo calcula el modelo predictivo del servidor, así que el turno no se agendó. Verificá la conexión y volvé a intentar.');
     } finally {
       setIsSubmitting(false);
     }
@@ -404,8 +368,23 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
           </div>
 
           {errorMsg && (
-            <div style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
-              {errorMsg}
+            <div
+              role="alert"
+              style={{
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--danger)',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                color: 'var(--danger)',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px',
+                lineHeight: 1.4
+              }}
+            >
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{errorMsg}</span>
             </div>
           )}
 

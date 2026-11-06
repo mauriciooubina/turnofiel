@@ -54,6 +54,15 @@
   gap: 3px;
 }
 
+.navbar-status-badge.live {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 /* 2. Center: Segmented Navigation Switcher */
 .navbar-tabs-segmented {
   display: flex;
