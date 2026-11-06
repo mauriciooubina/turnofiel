@@ -5,7 +5,7 @@ import type { Appointment } from '@/types';
 interface AbsenteeismAlertsProps {
   appointments: Appointment[];
   triggeredActions: Record<number, string>;
-  handleAction: (appId: number, clientHash: string, actionType: 'whatsapp' | 'confirm') => void;
+  handleAction: (app: Appointment, actionType: 'whatsapp' | 'confirm') => void;
   selectedAppId?: number | null;
 }
 
@@ -194,11 +194,11 @@ export const AbsenteeismAlerts: React.FC<AbsenteeismAlertsProps> = ({
                       <>
                         <button className="action-trigger-btn triggered whatsapp" disabled>
                           <Check size={14} />
-                          WhatsApp enviado
+                          Notificado por WhatsApp
                         </button>
                         <button 
                           className="action-trigger-btn secondary"
-                          onClick={() => handleAction(app.id, app.client_hashed, 'confirm')}
+                          onClick={() => handleAction(app, 'confirm')}
                         >
                           <UserCheck size={14} />
                           Confirmar
@@ -208,14 +208,15 @@ export const AbsenteeismAlerts: React.FC<AbsenteeismAlertsProps> = ({
                       <>
                         <button 
                           className="action-trigger-btn"
-                          onClick={() => handleAction(app.id, app.client_hashed, 'whatsapp')}
+                          title="Abre WhatsApp con un mensaje personalizado y registra la acción"
+                          onClick={() => handleAction(app, 'whatsapp')}
                         >
                           <MessageSquare size={14} />
-                          Recordatorio
+                          Recordatorio por WhatsApp
                         </button>
                         <button 
                           className="action-trigger-btn secondary"
-                          onClick={() => handleAction(app.id, app.client_hashed, 'confirm')}
+                          onClick={() => handleAction(app, 'confirm')}
                         >
                           <UserCheck size={14} />
                           Confirmar

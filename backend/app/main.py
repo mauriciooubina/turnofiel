@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from app.config import CORS_ALLOWED_ORIGINS, BACKEND_HOST, BACKEND_PORT
-from app.routers import calendar, queues
+from app.routers import actions, calendar, queues
 
 app = FastAPI(
     title="Sistema de Predicción de Ausentismo",
@@ -25,6 +25,7 @@ app.add_middleware(
 
 app.include_router(calendar.router)
 app.include_router(queues.router)
+app.include_router(actions.router)
 
 @app.get("/")
 def read_root():

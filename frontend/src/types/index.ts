@@ -38,3 +38,18 @@ export interface Appointment {
   diagnostic?: string;
 }
 
+export interface PreventiveActionRequest {
+  appointment_id: number;
+  shop_id: 'hellfish' | 'hooligans';
+  action_type: 'whatsapp' | 'confirm';
+  message?: string | null;
+}
+
+export interface PreventiveActionResponse {
+  id: number;
+  appointment_id: number;
+  shop_id: string;
+  action_type: string;
+  message?: string | null;
+  created_at: string;
+}

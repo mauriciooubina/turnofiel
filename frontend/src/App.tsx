@@ -7,7 +7,8 @@ import { ToastNotification } from '@/components/ToastNotification';
 import { ConnectionAlert } from '@/components/ConnectionAlert';
 import { SimulateAppointmentModal } from '@/components/SimulateAppointmentModal';
 import { FALLBACK_QUEUES, FALLBACK_CALENDAR } from '@/data/fallbackData';
-import type { ShopQueueData, Appointment } from '@/types';
+import { buildReminderMessage, buildWhatsAppUrl } from '@/utils';
+import type { ShopQueueData, Appointment, PreventiveActionResponse } from '@/types';
 import '@/styles/App.css';
 
 const DEFAULT_DATES: Record<'hellfish' | 'hooligans', string> = {
@@ -56,6 +57,24 @@ function App() {
       setAppointments(calendarData.appointments || []);
       setIsFallbackMode(false);
       setIsConnectionAlertDismissed(false);
+
+      try {
+        const actionsRes = await fetch(`${API_URL}/api/actions?shop_id=${shopId}`);
+        if (actionsRes.ok) {
+          const actionsData: PreventiveActionResponse[] = await actionsRes.json();
+          const fromServer: Record<number, string> = {};
+          for (const act of actionsData) {
+            if (act.action_type === 'confirm') {
+              fromServer[act.appointment_id] = 'confirmed';
+            } else if (act.action_type === 'whatsapp' && fromServer[act.appointment_id] !== 'confirmed') {
+              fromServer[act.appointment_id] = 'whatsapp';
+            }
+          }
+          setTriggeredActions(prev => ({ ...prev, ...fromServer }));
+        }
+      } catch (actionsErr) {
+        console.warn("Could not load actions history:", actionsErr);
+      }
     } catch (err) {
       console.warn("FastAPI backend is offline or unreachable. Loading fallback static mock data for demo...");
       setIsFallbackMode(true);
@@ -79,13 +98,45 @@ function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleAction = (appId: number, clientHash: string, actionType: 'whatsapp' | 'confirm') => {
+  const handleAction = async (app: Appointment, actionType: 'whatsapp' | 'confirm') => {
+    let message: string | null = null;
+    const baseText = actionType === 'whatsapp'
+      ? `Se abrió WhatsApp con el recordatorio del turno #${app.id}.`
+      : `Turno #${app.id} confirmado.`;
+
     if (actionType === 'whatsapp') {
-      setTriggeredActions(prev => ({ ...prev, [appId]: 'whatsapp' }));
-      triggerToast(`Recordatorio de WhatsApp enviado al cliente ${clientHash}.`);
+      message = buildReminderMessage(app, shopId);
+      const url = buildWhatsAppUrl(message);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTriggeredActions(prev => ({ ...prev, [app.id]: 'whatsapp' }));
     } else {
-      setTriggeredActions(prev => ({ ...prev, [appId]: 'confirmed' }));
-      triggerToast(`Turno #${appId} confirmado exitosamente.`);
+      setTriggeredActions(prev => ({ ...prev, [app.id]: 'confirmed' }));
+    }
+
+    if (isFallbackMode) {
+      triggerToast(`${baseText} Modalidad Local Demo: la acción no se guardó.`);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appointment_id: app.id,
+          shop_id: shopId,
+          action_type: actionType,
+          message
+        })
+      });
+
+      if (res.ok) {
+        triggerToast(`${baseText} Acción registrada.`);
+      } else {
+        triggerToast(`${baseText} No se pudo registrar la acción en el servidor.`);
+      }
+    } catch {
+      triggerToast(`${baseText} No se pudo registrar la acción en el servidor.`);
     }
   };
 

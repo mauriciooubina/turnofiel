@@ -148,7 +148,7 @@ docker compose up -d
 ### 5. Inicializar y Poblar la Base de Datos PostgreSQL
 
 ```bash
-# Crea las 5 tablas relacionales e inserta los 5.320 turnos procesados
+# Crea las 6 tablas relacionales (la 6.ª es preventive_actions, vacía) e inserta los 5.320 turnos procesados
 .venv/bin/python data_pipeline/init_db.py
 ```
 
@@ -164,6 +164,16 @@ npm run dev
 ```
 
 El dashboard estará disponible en: **`http://localhost:5173`**
+
+### Recordatorios por WhatsApp y reset de la demo
+
+El botón **Recordatorio por WhatsApp** en los turnos de riesgo de la agenda abre un enlace dinámico hacia `wa.me` con un mensaje personalizado y registra la acción en la tabla `preventive_actions`. Opcionalmente, se puede configurar en `frontend/.env` la variable `VITE_DEMO_WHATSAPP_NUMBER` con un número demo (solo dígitos, ej. `54911...`); si se deja vacía, WhatsApp solicita elegir el contacto.
+
+Para volver al día uno de la demo sin tocar los turnos históricos (`appointments`), se ejecuta el script de reset:
+
+```bash
+.venv/bin/python data_pipeline/reset_demo.py
+```
 
 ### Regenerar datos y modelo (opcional)
 
@@ -196,6 +206,8 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | `GET` | `/api/calendar?shop_id={hellfish\|hooligans}&date={YYYY-MM-DD}` | Devuelve la agenda del día con categorización predictiva de riesgo de ausentismo (`ALTO`, `MEDIO`, `BAJO`). |
 | `POST` | `/api/calendar/simulate` | Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
 | `GET` | `/api/queues` | Devuelve los parámetros estocásticos del modelo de colas $M/M/s$ ($\lambda, \mu, \rho, L_q, W_q, P_0$, estado de estabilidad) por comercio. |
+| `POST` | `/api/actions` | Registra una acción preventiva (`whatsapp` o `confirm`) sobre un turno en `preventive_actions`. |
+| `GET` | `/api/actions?shop_id={hellfish\|hooligans}` | Devuelve el historial de acciones preventivas registradas para un comercio. |
 
 ---
 

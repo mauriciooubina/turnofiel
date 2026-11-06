@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS consolidated_blocks CASCADE;
 DROP TABLE IF EXISTS barbers CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS queue_metrics CASCADE;
+DROP TABLE IF EXISTS preventive_actions CASCADE;
 
 CREATE TABLE barbers (
     id VARCHAR(50) NOT NULL,
@@ -108,6 +109,15 @@ CREATE TABLE queue_metrics (
     w_val NUMERIC(10,4),
     p0 NUMERIC(10,4),
     stable BOOLEAN
+);
+
+CREATE TABLE preventive_actions (
+    id SERIAL PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    shop_id VARCHAR(50) NOT NULL,
+    action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('whatsapp', 'confirm')),
+    message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 """
 
