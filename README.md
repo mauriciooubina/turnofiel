@@ -118,7 +118,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=pfi_db
 DB_USER=postgres
-DB_PASS=postgres
+DB_PASS=<contraseña-de-postgres>
 
 # Salts Criptográficos (Ley 25.326)
 HELLFISH_SALT=<sal-secreta-hellfish>
@@ -126,6 +126,8 @@ HOOLIGANS_SALT=<sal-secreta-hooligans>
 ```
 
 > Las sales son secretas: definilas solo en tu `.env` local (que no se versiona) y nunca las escribas en el código ni en la documentación. Docker Compose no levanta el backend si `HELLFISH_SALT` o `HOOLIGANS_SALT` no están definidas.
+
+> La contraseña de PostgreSQL también va solo en el `.env`. Docker Compose no levanta los contenedores si `DB_PASS` no está definida. Postgres toma la contraseña únicamente al crear el volumen `pgdata` por primera vez: si ya tenés la base creada, usá en `DB_PASS` la misma contraseña con la que se creó.
 
 ### 3. Crear el Entorno Virtual de Python
 

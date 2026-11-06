@@ -11,9 +11,11 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "pfi_db")
 DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "postgres")
+DB_PASS = os.getenv("DB_PASS")
 
 def get_db_connection():
+    if not DB_PASS:
+        raise RuntimeError("Falta DB_PASS: definila en el .env (ver .env.example)")
     return psycopg2.connect(
         host=DB_HOST,
         port=DB_PORT,

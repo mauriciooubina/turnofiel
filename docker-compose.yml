@@ -5,9 +5,9 @@ services:
     image: postgres:15
     container_name: pfi-postgres
     environment:
-      POSTGRES_DB: pfi_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-pfi_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:?Definir DB_PASS en .env}
     ports:
       - "5432:5432"
     volumes:
@@ -30,9 +30,9 @@ services:
       - DATA_SOURCE=POSTGRES
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=pfi_db
-      - DB_USER=postgres
-      - DB_PASS=postgres
+      - DB_NAME=${DB_NAME:-pfi_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:?Definir DB_PASS en .env}
     depends_on:
       - postgres
     restart: always
