@@ -124,6 +124,8 @@ DB_PORT=5432
 DB_NAME=pfi_db
 DB_USER=postgres
 DB_PASS=<contraseña-de-postgres>
+APP_DB_USER=pfi_app
+APP_DB_PASS=<contraseña-de-la-app-mínimo-12-caracteres>
 
 # Salts Criptográficos (Ley 25.326)
 HELLFISH_SALT=<sal-secreta-hellfish>
@@ -143,6 +145,8 @@ HOOLIGANS_PASSWORD=<contraseña-hooligans>
 
 > La contraseña de PostgreSQL también va solo en el `.env`. Docker Compose no levanta los contenedores si `DB_PASS` no está definida. Postgres toma la contraseña únicamente al crear el volumen `pgdata` por primera vez: si ya tenés la base creada, usá en `DB_PASS` la misma contraseña con la que se creó.
 
+> Variables nuevas del `.env`: `APP_DB_USER` (opcional, default `pfi_app`) y `APP_DB_PASS` (obligatoria, ≥ 12 caracteres). `DB_USER` y `DB_PASS` son el admin y solo los usan `postgres` y `tools`.
+
 ### 3. Crear el Entorno Virtual de Python
 
 ```bash
@@ -151,35 +155,53 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-### 4. Encender la Infraestructura (PostgreSQL + FastAPI Backend)
+### 4. Puesta en Marcha de la Infraestructura
+
+Puesta en marcha desde cero:
 
 ```bash
-# Desde la raíz del proyecto (pfi/)
-docker compose up -d
-```
+# Levantar la base de datos PostgreSQL
+docker compose up -d postgres
 
-### 5. Inicializar y Poblar la Base de Datos PostgreSQL
-
-```bash
 # Crea las 6 tablas relacionales (la 6.ª es preventive_actions, vacía) e inserta los 5.320 turnos procesados
-.venv/bin/python data_pipeline/init_db.py
+docker compose run --rm tools python data_pipeline/init_db.py
 
 # Crea la tabla users y guarda los 3 usuarios con su contraseña hasheada con bcrypt (se puede volver a correr para cambiar contraseñas)
-.venv/bin/python data_pipeline/create_users.py
+docker compose run --rm tools python data_pipeline/create_users.py
+
+# Crea el rol de la app con permisos mínimos (se puede volver a correr para cambiar APP_DB_PASS; después, `docker compose up -d backend`)
+docker compose run --rm tools python data_pipeline/setup_app_role.py
+
+# Construir y levantar toda la plataforma (PostgreSQL, backend y Caddy)
+docker compose up -d --build
 ```
+
+La app queda en **`https://localhost`** y la documentación de la API en `https://localhost/docs`. Ni el 5432 ni el 8000 se publican.
 
 > Los turnos se cargan desde `data/processed/` y los barberos y servicios desde `data/seed/` (versionado, sin datos de contacto). No hace falta `data/raw/`. El esquema declara claves foráneas de `appointments` hacia `barbers` y `services`. Ojo: el script borra y recrea todas las tablas, incluidas las acciones preventivas registradas.
 
-### 6. Iniciar el Dashboard Frontend (React + Vite)
+#### Certificado TLS / HTTPS
+
+La primera vez el navegador avisa que la CA no es de confianza. Se puede aceptar la advertencia, o confiar en la CA local de Caddy:
 
 ```bash
-# En una nueva terminal, acceder a la carpeta frontend
+docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.crt
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain caddy-root.crt
+```
+
+La CA vive en el volumen `caddy_data`: no cambia entre rebuilds.
+
+### 5. Desarrollo con Recarga en Caliente (Frontend)
+
+Para desarrollar en el frontend con HMR:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-El dashboard estará disponible en: **`http://localhost:5173`**
+Para desarrollar con `npm run dev`, poné `VITE_API_URL=https://localhost` en `frontend/.env` (CORS ya permite `http://localhost:5173`). El dashboard queda en **`http://localhost:5173`**.
 
 ### Recordatorios por WhatsApp y reset de la demo
 
@@ -188,7 +210,7 @@ El botón **Recordatorio por WhatsApp** en los turnos de riesgo de la agenda abr
 Para volver al día uno de la demo sin tocar los turnos históricos (`appointments`), se ejecuta el script de reset:
 
 ```bash
-.venv/bin/python data_pipeline/reset_demo.py
+docker compose run --rm tools python data_pipeline/reset_demo.py
 ```
 
 ### Usuarios y roles
@@ -224,7 +246,7 @@ La búsqueda de hiperparámetros solo usa `data/processed/`, así que se puede c
 ## Endpoints de la REST API (FastAPI)
 
 Una vez iniciado el backend, se puede acceder a la documentación interactiva OpenAPI (Swagger UI) en:
-**`http://localhost:8000/docs`**
+**`https://localhost/docs`**
 
 | Método | Endpoint | Descripción |
 | :--- | :--- | :--- |
@@ -239,10 +261,13 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 
 ## Tests automatizados
 
-El backend tiene una suite de pytest que no requiere la base de datos levantada:
+El backend tiene una suite de pytest que puede ejecutarse dentro del contenedor `tools` o en el entorno local:
 
 ```bash
-# Desde la raíz del proyecto (pfi/)
+# Con el contenedor tools (incluye tests con conexión a base de datos)
+docker compose run --rm tools pytest backend/tests -q
+
+# O en el entorno local (fuera de Docker, los tests que leen la base se saltean)
 .venv/bin/python -m pytest backend/tests -q
 ```
 

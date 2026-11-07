@@ -8,19 +8,16 @@ services:
       POSTGRES_DB: ${DB_NAME:-pfi_db}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASS:?Definir DB_PASS en .env}
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always
 
   backend:
+    image: pfi-backend:local
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: pfi_backend
-    ports:
-      - "8000:8000"
     volumes:
       - .:/app
     environment:
@@ -31,14 +28,58 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=${DB_NAME:-pfi_db}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASS=${DB_PASS:?Definir DB_PASS en .env}
+      - DB_USER=${APP_DB_USER:-pfi_app}
+      - DB_PASS=${APP_DB_PASS:?Definir APP_DB_PASS en .env}
       - JWT_SECRET=${JWT_SECRET:?Definir JWT_SECRET en .env}
       - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-480}
     depends_on:
       - postgres
     restart: always
 
+  tools:
+    image: pfi-backend:local
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    profiles: ["tools"]
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HELLFISH_SALT=${HELLFISH_SALT:?Definir HELLFISH_SALT en .env}
+      - HOOLIGANS_SALT=${HOOLIGANS_SALT:?Definir HOOLIGANS_SALT en .env}
+      - JWT_SECRET=${JWT_SECRET:?Definir JWT_SECRET en .env}
+      - DATA_SOURCE=POSTGRES
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-pfi_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:?Definir DB_PASS en .env}
+      - APP_DB_USER=${APP_DB_USER:-pfi_app}
+      - APP_DB_PASS=${APP_DB_PASS:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - HELLFISH_PASSWORD=${HELLFISH_PASSWORD:-}
+      - HOOLIGANS_PASSWORD=${HOOLIGANS_PASSWORD:-}
+
+  caddy:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pfi_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: always
+
 volumes:
   pgdata:
-
+  caddy_data:
+  caddy_config:

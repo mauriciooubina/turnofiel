@@ -165,3 +165,27 @@ def test_get_actions_endpoint(client):
         assert data[0]["shop_id"] == "hellfish"
         assert data[0]["appointment_id"] == 101
         assert data[0]["action_type"] == "whatsapp"
+
+
+def test_actions_never_execute_create():
+    mock_conn = MagicMock()
+    mock_cur = MagicMock()
+    mock_conn.cursor.return_value = mock_cur
+    mock_cur.fetchone.return_value = (1, 2814, "hooligans", "whatsapp", "Hola", datetime(2026, 1, 21, 10, 0))
+    mock_cur.fetchall.return_value = []
+
+    with patch("app.services.actions_service.get_db_connection", return_value=mock_conn):
+        req = PreventiveActionRequest(
+            appointment_id=2814,
+            shop_id="hooligans",
+            action_type="whatsapp",
+            message="Hola"
+        )
+        register_action(req)
+        list_actions("hooligans")
+
+        assert mock_cur.execute.call_count > 0
+        for call_args in mock_cur.execute.call_args_list:
+            sql = call_args[0][0]
+            assert "create table" not in str(sql).lower()
+

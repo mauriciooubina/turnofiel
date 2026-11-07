@@ -358,9 +358,11 @@ def test_case_13_create_users_script():
         "HOOLIGANS_PASSWORD": "validHooligansPassword123",
     }
     with patch.dict(os.environ, valid_env, clear=True), \
-         patch("data_pipeline.create_users.get_db_connection", return_value=mock_connection):
+         patch("data_pipeline.create_users.get_db_connection", return_value=mock_connection), \
+         patch("data_pipeline.create_users.apply_grants_if_configured") as mock_grants:
         main()
 
+        mock_grants.assert_called_once_with(mock_cursor)
         assert mock_connection.commit.call_count == 1
         assert mock_cursor.close.called
         assert mock_connection.close.called

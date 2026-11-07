@@ -20,6 +20,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 from app.services.auth_service import CREATE_USERS_TABLE_SQL, hash_password
 from init_db import get_db_connection
+from db_roles import apply_grants_if_configured
 
 USER_DEFINITIONS = [
     ("admin", "ADMIN_PASSWORD", "admin", None),
@@ -52,6 +53,7 @@ def main():
             for username, var_name, role, shop_id in USER_DEFINITIONS:
                 pwd_hash = hash_password(passwords[username])
                 cur.execute(upsert_sql, (username, pwd_hash, role, shop_id))
+            apply_grants_if_configured(cur)
             conn.commit()
             print("Usuarios creados o actualizados: admin, hellfish, hooligans")
         finally:

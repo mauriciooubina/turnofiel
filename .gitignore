@@ -3,6 +3,7 @@
 *.env.local
 backend/.env
 frontend/.env
+caddy-root.crt
 
 # OS Files
 .DS_Store

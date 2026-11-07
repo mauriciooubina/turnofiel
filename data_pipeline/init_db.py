@@ -5,6 +5,11 @@ import psycopg2
 from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 
+try:
+    from db_roles import apply_grants_if_configured
+except ImportError:
+    from data_pipeline.db_roles import apply_grants_if_configured
+
 load_dotenv()
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -276,6 +281,7 @@ def populate_database(base_dir):
             """, metric_tuples)
         print("Populated queue_metrics table.")
 
+    apply_grants_if_configured(cur)
     conn.commit()
     cur.close()
     conn.close()

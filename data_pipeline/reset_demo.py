@@ -8,6 +8,7 @@ if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
 from init_db import get_db_connection
+from db_roles import apply_grants_if_configured
 
 CREATE_ACTIONS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS preventive_actions (
@@ -30,6 +31,7 @@ def reset_demo():
             cur.execute("SELECT COUNT(*) FROM preventive_actions;")
             count = cur.fetchone()[0]
             cur.execute("TRUNCATE TABLE preventive_actions RESTART IDENTITY;")
+            apply_grants_if_configured(cur)
             conn.commit()
             print(f"Reset de la demo: {count} acciones preventivas eliminadas. Los turnos históricos (appointments) no se modificaron.")
         finally:
