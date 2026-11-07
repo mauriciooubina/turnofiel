@@ -8,6 +8,8 @@ from app.services.db_service import fetch_appointments_from_db
 from app.services.ml_service import predict_appointment_risk
 from app.services.privacy_service import get_privacy_state_safe
 
+INACTIVE_BARBER_DIAGNOSTIC = "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
+
 def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
     """Devuelve los turnos de la fecha seleccionada y calcula el riesgo de ausentismo."""
     try:
@@ -90,7 +92,7 @@ def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
             barber_name = str(row.get('barber_name', 'Barbero'))
 
             if not barber_active or 'inactivo' in barber_name.lower():
-                diag = "El profesional asignado figura inactivo en el sistema."
+                diag = INACTIVE_BARBER_DIAGNOSTIC
             elif row["_erased"]:
                 diag = "Datos del cliente suprimidos a su pedido (Ley 25.326): el riesgo se estima sin su historial."
             elif risk == "ALTO":

@@ -181,6 +181,8 @@ docker compose up -d --build
 
 La app queda en **`https://localhost`** y la documentación de la API en `https://localhost/docs`. Ni el 5432 ni el 8000 se publican.
 
+> Para verificar que el backend está activo: abrir `https://localhost/api/health` en el navegador o correr `curl https://localhost/api/health` (responde `{"message": "Backend running successfully.", "status": "active"}`). `GET /` responde lo mismo, pero solo dentro de la red de Docker, porque el 8000 no se publica.
+
 > Los turnos se cargan desde `data/processed/` y los barberos y servicios desde `data/seed/` (versionado, sin datos de contacto). No hace falta `data/raw/`. El esquema declara claves foráneas de `appointments` hacia `barbers` y `services`. Ojo: el script borra y recrea todas las tablas, incluidas las acciones preventivas registradas.
 
 #### Certificado TLS / HTTPS
@@ -309,6 +311,7 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | Método | Endpoint | Descripción |
 | :--- | :--- | :--- |
 | `GET` | `/` | Verifica que el backend esté activo. |
+| `GET` | `/api/health` | Verificación de estado pública (sin login), accesible por HTTPS. |
 | `GET` | `/api/calendar?shop_id={hellfish\|hooligans}&date={YYYY-MM-DD}` | Devuelve la agenda del día con categorización predictiva de riesgo de ausentismo (`ALTO`, `MEDIO`, `BAJO`). |
 | `POST` | `/api/calendar/simulate` | Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
 | `GET` | `/api/queues` | Devuelve los parámetros del modelo $M/M/s$ en tres modos: sin parámetros (métricas históricas por comercio), `?lambda_rate=&mu_rate=&servers=` (cálculo directo, CP5) y `?shop_id=&date=&walk_ins=12:2,18:1` (franjas horarias del día con λ = Σ(1−p) + walk-ins, sin guardar nada). |

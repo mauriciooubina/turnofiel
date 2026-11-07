@@ -34,9 +34,16 @@ app.include_router(actions.router)
 app.include_router(privacy.router)
 app.include_router(export.router)
 
+HEALTH_RESPONSE = {"message": "Backend running successfully.", "status": "active"}
+
 @app.get("/")
 def read_root():
-    return {"message": "Backend running successfully.", "status": "active"}
+    return HEALTH_RESPONSE
+
+@app.get("/api/health", tags=["health"])
+def health_check():
+    """Verificación de estado del servicio (público, sin autenticación). Accesible por HTTPS a través de Caddy."""
+    return HEALTH_RESPONSE
 
 if __name__ == "__main__":
     import uvicorn

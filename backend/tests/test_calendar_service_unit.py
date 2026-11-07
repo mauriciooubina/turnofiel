@@ -3,6 +3,7 @@ import pandas as pd
 from unittest.mock import patch
 from fastapi import HTTPException
 from app.services.calendar_service import (
+    INACTIVE_BARBER_DIAGNOSTIC,
     get_calendar_data,
     simulate_appointment_service,
 )
@@ -192,7 +193,8 @@ def test_calendar_high_risk_diagnostics(calendar_csv_file):
                 # con historial y 0 inasistencias
                 assert "varios días de anticipación" in apps_by_client["client_loyal"].diagnostic
                 # profesional inactivo
-                assert "inactivo" in apps_by_client["client_inactive_barber"].diagnostic
+                assert apps_by_client["client_inactive_barber"].diagnostic == INACTIVE_BARBER_DIAGNOSTIC
+                assert "reasignar" in apps_by_client["client_inactive_barber"].diagnostic
 
 
 def test_calendar_medium_and_low_risk_diagnostics(calendar_csv_file):

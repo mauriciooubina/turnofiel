@@ -70,7 +70,7 @@ export const AbsenteeismAlerts: React.FC<AbsenteeismAlertsProps> = ({
     }
     const isInactive = app.barber_name.toLowerCase().includes("inactivo");
     if (isInactive) {
-      return "El profesional asignado figura inactivo en el sistema.";
+      return "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo.";
     }
     if (app.ausentismo_risk === "ALTO") {
       return "Turno agendado con varios días de anticipación sin confirmar.";

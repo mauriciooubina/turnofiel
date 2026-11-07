@@ -473,7 +473,7 @@
         "ausentismo_risk": "ALTO",
         "noshow_probability": 0.99,
         "color_code": "#ef4444",
-        "diagnostic": "El profesional asignado figura inactivo en el sistema."
+        "diagnostic": "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
       },
       {
         "id": 2464,
@@ -509,7 +509,7 @@
         "ausentismo_risk": "ALTO",
         "noshow_probability": 0.99,
         "color_code": "#ef4444",
-        "diagnostic": "El profesional asignado figura inactivo en el sistema."
+        "diagnostic": "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
       },
       {
         "id": 2428,
@@ -617,7 +617,7 @@
         "ausentismo_risk": "ALTO",
         "noshow_probability": 0.99,
         "color_code": "#ef4444",
-        "diagnostic": "El profesional asignado figura inactivo en el sistema."
+        "diagnostic": "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
       },
       {
         "id": 2465,
@@ -761,7 +761,7 @@
         "ausentismo_risk": "ALTO",
         "noshow_probability": 0.99,
         "color_code": "#ef4444",
-        "diagnostic": "El profesional asignado figura inactivo en el sistema."
+        "diagnostic": "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
       },
       {
         "id": 2440,
@@ -797,7 +797,7 @@
         "ausentismo_risk": "ALTO",
         "noshow_probability": 0.99,
         "color_code": "#ef4444",
-        "diagnostic": "El profesional asignado figura inactivo en el sistema."
+        "diagnostic": "El profesional asignado figura inactivo en el sistema. Se recomienda reasignar el turno a un profesional activo."
       }
     ]
   }
