@@ -48,11 +48,14 @@ pfi/
 │   ├── raw/                     # CSVs originales con datos personales (no se versionan, Ley 25.326)
 │   │   ├── hellfish/            # appointments.csv, barbers.csv, services.csv
 │   │   └── hooligans/           # appointments.csv, barbers.csv, services.csv
-│   └── processed/               # Datos procesados y anonimizados (sí se versionan)
-│       ├── processed_appointments_matrix.csv
-│       ├── consolidated_blocks.csv
-│       ├── ml_metrics_summary.json
-│       └── queue_metrics.json
+│   ├── processed/               # Datos procesados y anonimizados (sí se versionan)
+│   │   ├── processed_appointments_matrix.csv
+│   │   ├── consolidated_blocks.csv
+│   │   ├── ml_metrics_summary.json
+│   │   └── queue_metrics.json
+│   └── seed/                    # Barberos y servicios para init_db.py (sí se versionan)
+│       ├── barbers.csv
+│       └── services.csv
 │
 ├── data_pipeline/               # Pipeline de Ingeniería de Datos y Simulación
 │   ├── etl_pipeline.py          # Proceso ETL: limpieza, aislamiento de bloqueos y hashing SHA-256
@@ -152,7 +155,7 @@ docker compose up -d
 .venv/bin/python data_pipeline/init_db.py
 ```
 
-> Los turnos se cargan desde `data/processed/`. Los datos de barberos y servicios se leen de `data/raw/<comercio>/barbers.csv` y `services.csv`; si esos archivos no están disponibles, esas tablas quedan vacías.
+> Los turnos se cargan desde `data/processed/` y los barberos y servicios desde `data/seed/` (versionado, sin datos de contacto). No hace falta `data/raw/`. El esquema declara claves foráneas de `appointments` hacia `barbers` y `services`. Ojo: el script borra y recrea todas las tablas, incluidas las acciones preventivas registradas.
 
 ### 6. Iniciar el Dashboard Frontend (React + Vite)
 

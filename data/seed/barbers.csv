@@ -1,0 +1,9 @@
+shop_id,id,name,role,active
+hellfish,1,Facundo (Yayu),admin,True
+hellfish,2,Martin,barber,True
+hellfish,3,Alan,barber,False
+hellfish,5,Mauro,barber,False
+hellfish,6,Mauro,barber,True
+hooligans,1,Sebastian Fraga,admin,True
+hooligans,4,Valen,barber,False
+hooligans,5,Valentino,barber,True

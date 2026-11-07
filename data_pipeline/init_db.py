@@ -74,7 +74,9 @@ CREATE TABLE appointments (
     created_at TIMESTAMP,
     created_by VARCHAR(100),
     deleted_at TIMESTAMP,
-    deleted_by VARCHAR(100)
+    deleted_by VARCHAR(100),
+    FOREIGN KEY (shop_id, barber_id) REFERENCES barbers (shop_id, id),
+    FOREIGN KEY (shop_id, service_id) REFERENCES services (shop_id, id)
 );
 
 CREATE TABLE consolidated_blocks (
@@ -121,7 +123,48 @@ CREATE TABLE preventive_actions (
 );
 """
 
+def read_seed_barbers(base_dir: str) -> list:
+    """Lee data/seed/barbers.csv y devuelve tuplas (id, shop_id, name, role, active, commission)."""
+    path = os.path.join(base_dir, "data", "seed", "barbers.csv")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Falta el seed {path}: es parte del repositorio (data/seed/)")
+    df = pd.read_csv(path, dtype={"id": str, "shop_id": str})
+    return [
+        (
+            str(r["id"]),
+            str(r["shop_id"]),
+            str(r["name"]),
+            str(r["role"]) if pd.notna(r["role"]) else None,
+            bool(r["active"]),
+            None,
+        )
+        for _, r in df.iterrows()
+    ]
+
+
+def read_seed_services(base_dir: str) -> list:
+    """Lee data/seed/services.csv y devuelve tuplas (id, shop_id, name, description, price, duration)."""
+    path = os.path.join(base_dir, "data", "seed", "services.csv")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Falta el seed {path}: es parte del repositorio (data/seed/)")
+    df = pd.read_csv(path, dtype={"id": str, "shop_id": str})
+    return [
+        (
+            str(r["id"]),
+            str(r["shop_id"]),
+            str(r["name"]),
+            str(r["description"]) if pd.notna(r["description"]) else None,
+            float(r["price"]),
+            int(r["duration"]),
+        )
+        for _, r in df.iterrows()
+    ]
+
+
 def populate_database(base_dir):
+    barber_tuples = read_seed_barbers(base_dir)
+    service_tuples = read_seed_services(base_dir)
+
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -129,50 +172,24 @@ def populate_database(base_dir):
     cur.execute(CREATE_TABLES_SQL)
     conn.commit()
 
-    raw_dir = os.path.join(base_dir, "data", "raw")
     processed_dir = os.path.join(base_dir, "data", "processed")
 
-    shops = ["hellfish", "hooligans"]
-
     # 1. Populate Barbers & Services metadata
-    for shop in shops:
-        shop_raw_dir = os.path.join(raw_dir, shop)
-        barbers_path = os.path.join(shop_raw_dir, "barbers.csv")
-        services_path = os.path.join(shop_raw_dir, "services.csv")
+    execute_values(cur, """
+        INSERT INTO barbers (id, shop_id, name, role, active, commission)
+        VALUES %s
+        ON CONFLICT (shop_id, id) DO NOTHING;
+    """, barber_tuples)
 
-        if os.path.exists(barbers_path):
-            df_b = pd.read_csv(barbers_path)
-            barber_tuples = [
-                (
-                    str(r['id']), shop, str(r['name']),
-                    str(r['role']) if pd.notna(r.get('role')) else None,
-                    bool(r['active']) if pd.notna(r.get('active')) else True,
-                    float(r['commission']) if pd.notna(r.get('commission')) else None
-                ) for _, r in df_b.iterrows()
-            ]
-            execute_values(cur, """
-                INSERT INTO barbers (id, shop_id, name, role, active, commission)
-                VALUES %s
-                ON CONFLICT (shop_id, id) DO NOTHING;
-            """, barber_tuples)
+    execute_values(cur, """
+        INSERT INTO services (id, shop_id, name, description, price, duration)
+        VALUES %s
+        ON CONFLICT (shop_id, id) DO NOTHING;
+    """, service_tuples)
 
-        if os.path.exists(services_path):
-            df_s = pd.read_csv(services_path)
-            service_tuples = [
-                (
-                    str(r['id']), shop, str(r['name']),
-                    str(r.get('description', '')) if pd.notna(r.get('description')) else None,
-                    float(r['price']) if pd.notna(r.get('price')) else 0.0,
-                    int(r['duration']) if pd.notna(r.get('duration')) else 30
-                ) for _, r in df_s.iterrows()
-            ]
-            execute_values(cur, """
-                INSERT INTO services (id, shop_id, name, description, price, duration)
-                VALUES %s
-                ON CONFLICT (shop_id, id) DO NOTHING;
-            """, service_tuples)
-
-    print("Populated barbers and services tables.")
+    n_b = len(barber_tuples)
+    n_s = len(service_tuples)
+    print(f"Populated barbers ({n_b}) and services ({n_s}) tables.")
 
     # 2. Populate Processed Appointments Matrix
     matrix_path = os.path.join(processed_dir, "processed_appointments_matrix.csv")

@@ -1,0 +1,11 @@
+shop_id,id,name,description,price,duration
+hellfish,1,Corte,Corte tradicional / degradé con tijera y/o máquina,22000,30
+hellfish,2,Afeitado a vapor,Recorte y perfilado de barba con máquina (y navaja opcional),15000,30
+hellfish,3,Corte + Arreglo de Barba,Corte de Pelo + Arreglo de Barba + (Afeitado a vapor opcional),27000,60
+hellfish,4,Perfilado de cejas,Perfilado de cejas (selvicio gratuito),0,30
+hellfish,5,Corte para niños,Corte para niños,22000,30
+hooligans,1,Arreglo de Barba,Recorte y perfilado de barba con máquina y/o navaja. Incluye recorte y perfilado de cejas,13000,30
+hooligans,2,Corte + Barba SOCIOS C.A.P,Descuento exclusivo para Socios de Platense,19500,30
+hooligans,3,Corte + Barba,Corte de Pelo + Arreglo de Barba. Incluye recorte y perfilado de cejas.,23000,45
+hooligans,4,Corte SOCIOS C.A.P,Descuento exclusivo para Socios de Platense,15500,30
+hooligans,6,Corte de Pelo,Corte tradicional / degradé con tijera y/o máquina. Incluye recorte y perfilado de cejas.,18000,30

@@ -10,6 +10,43 @@ MODEL_PATH = os.path.abspath(
 
 _cached_model = None
 
+# Medianas de antelación (h) por canal, calculadas en el entrenamiento con
+# compute_channel_lead_time_medians() sobre processed_appointments_matrix.csv.
+# Se imputan en inferencia ante antelaciones negativas (registros retrospectivos), igual que train_models.py.
+LEAD_TIME_MEDIAN_STAFF = 22.214066666666668
+LEAD_TIME_MEDIAN_SELF_BOOKED = 24.238278888888892
+
+
+def clean_lead_time_for_inference(lead_time_hours: Any, is_self_booked: Any = 0) -> float:
+    """Limpia e imputa la antelación de reserva (lead_time_hours) para la inferencia del modelo.
+
+    Replica la lógica de data_pipeline.train_models.load_and_preprocess_data:
+    - Si lead_time_hours es None o NaN, imputa la mediana del canal de autogestión (LEAD_TIME_MEDIAN_SELF_BOOKED).
+    - Si es menor a 0, imputa la mediana correspondiente al canal de reserva: LEAD_TIME_MEDIAN_SELF_BOOKED
+      si int(is_self_booked) == 1, o LEAD_TIME_MEDIAN_STAFF si es del personal (0).
+      Si is_self_booked es NaN, se asume canal personal (0).
+    - Finalmente recorta el valor al intervalo acotado [0.0, 720.0] horas.
+    """
+    if lead_time_hours is None or pd.isna(lead_time_hours):
+        val = LEAD_TIME_MEDIAN_SELF_BOOKED
+    else:
+        try:
+            val = float(lead_time_hours)
+        except (ValueError, TypeError):
+            val = LEAD_TIME_MEDIAN_SELF_BOOKED
+
+        if val < 0:
+            sb = 0
+            if is_self_booked is not None and not pd.isna(is_self_booked):
+                try:
+                    sb = int(is_self_booked)
+                except (ValueError, TypeError):
+                    sb = 0
+            val = LEAD_TIME_MEDIAN_SELF_BOOKED if sb == 1 else LEAD_TIME_MEDIAN_STAFF
+
+    return max(0.0, min(720.0, float(val)))
+
+
 def get_ml_model():
     global _cached_model
     if _cached_model is None:
@@ -37,7 +74,7 @@ def predict_appointment_risk(
         return "ALTO", "#ef4444", 0.99
         
     lead_time = float(row.get('lead_time_hours', 24.0)) if not pd.isna(row.get('lead_time_hours')) else 24.0
-    clean_lead_time = max(0.0, min(720.0, lead_time))
+    clean_lead_time = clean_lead_time_for_inference(row.get('lead_time_hours'), row.get('is_self_booked', 0))
     catalog_price = float(row.get('service_price', row.get('price', 10000.0))) if not pd.isna(row.get('service_price', row.get('price'))) else 10000.0
     duration = int(row.get('duration', 30)) if not pd.isna(row.get('duration')) else 30
     hour = int(row.get('hour_of_day', 14)) if not pd.isna(row.get('hour_of_day')) else 14

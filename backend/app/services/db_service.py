@@ -14,6 +14,8 @@ def get_db_connection():
 def fetch_appointments_from_db(shop_id: str, date: str = None) -> pd.DataFrame:
     conn = get_db_connection()
     
+    # El modelo necesita las mismas variables que en el entrenamiento (hora, día, mes,
+    # precio de catálogo y fecha-hora para el historial del cliente).
     query = """
         SELECT 
             a.id,
@@ -25,12 +27,17 @@ def fetch_appointments_from_db(shop_id: str, date: str = None) -> pd.DataFrame:
             TO_CHAR(a.start_time, 'HH24:MI') AS start_time,
             TO_CHAR(a.start_time + (s.duration || ' minutes')::interval, 'HH24:MI') AS end_time,
             s.name AS service_name,
-            a.price AS service_price,
+            s.price AS service_price,
+            a.price AS price,
             s.duration AS duration,
             a.client_hashed,
             a.is_self_booked,
             a.lead_time_hours,
-            a.target
+            a.target,
+            a.day_of_week,
+            a.hour_of_day,
+            a.month,
+            TO_CHAR(a.start_time, 'YYYY-MM-DD HH24:MI:SS') AS appointment_start
         FROM appointments a
         LEFT JOIN barbers b ON a.shop_id = b.shop_id AND a.barber_id = b.id
         LEFT JOIN services s ON a.shop_id = s.shop_id AND a.service_id = s.id

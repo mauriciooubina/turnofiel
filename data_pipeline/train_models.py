@@ -31,13 +31,19 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR, exist_ok=True)
 os.makedirs(LATEX_IMG_DIR, exist_ok=True)
 
+def compute_channel_lead_time_medians(df):
+    """Mediana de lead_time_hours (solo registros con antelación >= 0) por canal de reserva.
+    Devuelve (mediana_personal, mediana_autogestion) para is_self_booked 0 y 1."""
+    med_0 = df[(df['lead_time_hours'] >= 0) & (df['is_self_booked'] == 0)]['lead_time_hours'].median()
+    med_1 = df[(df['lead_time_hours'] >= 0) & (df['is_self_booked'] == 1)]['lead_time_hours'].median()
+    return med_0, med_1
+
 def load_and_preprocess_data(csv_path):
     print(f"[+] Cargando datos desde {csv_path}...")
     df = pd.read_csv(csv_path)
     
     # 1. Limpieza de lead_time_hours (antelación)
-    med_0 = df[(df['lead_time_hours'] >= 0) & (df['is_self_booked'] == 0)]['lead_time_hours'].median()
-    med_1 = df[(df['lead_time_hours'] >= 0) & (df['is_self_booked'] == 1)]['lead_time_hours'].median()
+    med_0, med_1 = compute_channel_lead_time_medians(df)
     df['clean_lead_time'] = df['lead_time_hours']
     df.loc[(df['clean_lead_time'] < 0) & (df['is_self_booked'] == 0), 'clean_lead_time'] = med_0
     df.loc[(df['clean_lead_time'] < 0) & (df['is_self_booked'] == 1), 'clean_lead_time'] = med_1
