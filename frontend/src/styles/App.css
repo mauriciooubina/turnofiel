@@ -1231,3 +1231,105 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Queue Slots Section with Live Walk-ins */
+.queue-slots-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+.queue-slots-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-bottom: 2px solid var(--card-border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.queue-slots-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.queue-slots-table tr:hover td {
+  background: #f8fafc;
+}
+
+.walk-in-controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.walk-in-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.walk-in-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: var(--card-hover-border);
+}
+
+.walk-in-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.walk-in-btn-add {
+  background: var(--primary-light);
+  color: var(--secondary);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.walk-in-btn-add:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--secondary);
+}
+
+.queue-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.queue-reset-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: var(--text-primary);
+  border-color: var(--card-hover-border);
+}
+
+.queue-reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

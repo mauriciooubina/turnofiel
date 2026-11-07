@@ -99,6 +99,7 @@ def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
                     is_self_booked=int(row['is_self_booked']),
                     target=int(row['target']) if not pd.isna(row.get('target')) else None,
                     ausentismo_risk=risk,
+                    noshow_probability=prob,
                     color_code=color,
                     diagnostic=diag
                 )
@@ -244,6 +245,7 @@ def simulate_appointment_service(req: SimulateAppointmentRequest) -> Appointment
             is_self_booked=req.is_self_booked,
             target=None,
             ausentismo_risk=risk,
+            noshow_probability=prob,
             color_code=color,
             diagnostic=diag
         )

@@ -2,13 +2,29 @@ import React from 'react';
 import { TrendingUp, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ShopQueueData } from '@/types';
 import { formatNumber, formatPercent } from '@/utils';
+import { QueueSlotsSection } from './QueueSlotsSection';
 
 interface QueueMetricsColumnProps {
   queueMetrics: ShopQueueData | null;
   shopId: 'hellfish' | 'hooligans';
+  walkIns: Record<number, number>;
+  onAddWalkIn: (hour: number) => void;
+  onRemoveWalkIn: (hour: number) => void;
+  onResetWalkIns: () => void;
+  isRecalculating: boolean;
+  isFallbackMode: boolean;
 }
 
-export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMetrics, shopId }) => {
+export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({
+  queueMetrics,
+  shopId,
+  walkIns,
+  onAddWalkIn,
+  onRemoveWalkIn,
+  onResetWalkIns,
+  isRecalculating,
+  isFallbackMode,
+}) => {
   if (!queueMetrics) {
     return (
       <div className="column-card">
@@ -141,7 +157,7 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
               'No aplica'
             ) : (
               <>
-                {formatNumber(metrics.Wq_minutes, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>minutos</span>
+                {formatNumber(metrics.Wq_minutes ?? 0, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>minutos</span>
               </>
             )}
           </div>
@@ -163,7 +179,7 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
               'No aplica'
             ) : (
               <>
-                {formatNumber(metrics.Lq, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>clientes</span>
+                {formatNumber(metrics.Lq ?? 0, 2)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>clientes</span>
               </>
             )}
           </div>
@@ -221,6 +237,16 @@ export const QueueMetricsColumn: React.FC<QueueMetricsColumnProps> = ({ queueMet
           </p>
         </div>
       </div>
+
+      <QueueSlotsSection
+        queueMetrics={queueMetrics}
+        walkIns={walkIns}
+        onAddWalkIn={onAddWalkIn}
+        onRemoveWalkIn={onRemoveWalkIn}
+        onResetWalkIns={onResetWalkIns}
+        isRecalculating={isRecalculating}
+        isFallbackMode={isFallbackMode}
+      />
 
     </div>
   );

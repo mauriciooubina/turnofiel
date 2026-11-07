@@ -15,6 +15,7 @@ class AppointmentResponse(BaseModel):
     is_self_booked: int
     target: Optional[int] = None
     ausentismo_risk: str
+    noshow_probability: Optional[float] = None
     color_code: str
     diagnostic: Optional[str] = None
 

@@ -205,7 +205,7 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | `GET` | `/` | Verifica que el backend esté activo. |
 | `GET` | `/api/calendar?shop_id={hellfish\|hooligans}&date={YYYY-MM-DD}` | Devuelve la agenda del día con categorización predictiva de riesgo de ausentismo (`ALTO`, `MEDIO`, `BAJO`). |
 | `POST` | `/api/calendar/simulate` | Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
-| `GET` | `/api/queues` | Devuelve los parámetros estocásticos del modelo de colas $M/M/s$ ($\lambda, \mu, \rho, L_q, W_q, P_0$, estado de estabilidad) por comercio. |
+| `GET` | `/api/queues` | Devuelve los parámetros del modelo $M/M/s$ en tres modos: sin parámetros (métricas históricas por comercio), `?lambda_rate=&mu_rate=&servers=` (cálculo directo, CP5) y `?shop_id=&date=&walk_ins=12:2,18:1` (franjas horarias del día con λ = Σ(1−p) + walk-ins, sin guardar nada). |
 | `POST` | `/api/actions` | Registra una acción preventiva (`whatsapp` o `confirm`) sobre un turno en `preventive_actions`. |
 | `GET` | `/api/actions?shop_id={hellfish\|hooligans}` | Devuelve el historial de acciones preventivas registradas para un comercio. |
 
@@ -224,7 +224,7 @@ El backend tiene una suite de pytest que no requiere la base de datos levantada:
 | :--- | :--- |
 | `test_ml_service.py` | Carga del modelo, umbrales de riesgo (0,20 / 0,50), regla de barbero inactivo y fallback heurístico. `test_predict_documented_high_risk_case` reproduce el **Caso de Prueba 2** de la tesis (turno documentado → `ALTO`, probabilidad ≈ 0,68, inferencia < 5 ms). |
 | `test_calendar.py` | Endpoint de agenda y simulación de turnos. `test_calendar_fallback_http_when_postgres_down` reproduce el **Caso de Prueba 4** de la tesis (PostgreSQL caído → fallback a CSV con HTTP 200 en < 200 ms). |
-| `test_queues.py` | Endpoint y servicio de teoría de colas $M/M/s$, incluido el fallback a archivo si PostgreSQL no responde. |
+| `test_queues.py` | Endpoint y servicio de teoría de colas $M/M/s$, incluido el fallback a archivo si PostgreSQL no responde, franjas con walk-ins y parámetros directos (CP5). |
 | `test_db_service.py` | Consultas a PostgreSQL: usa la base real si está levantada y, si no, una conexión simulada. |
 | `test_main.py` | Endpoint raíz y esquema OpenAPI. |
 

@@ -29,6 +29,8 @@ function App() {
   const [queueMetrics, setQueueMetrics] = useState<ShopQueueData | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
+  const [walkIns, setWalkIns] = useState<Record<number, number>>({});
+  const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
   
   const [triggeredActions, setTriggeredActions] = useState<Record<number, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -43,7 +45,7 @@ function App() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const queuesRes = await fetch(`${API_URL}/api/queues`);
+      const queuesRes = await fetch(`${API_URL}/api/queues?shop_id=${shopId}&date=${date}`);
       if (!queuesRes.ok) throw new Error('API Queues error');
       const queuesData: ShopQueueData[] = await queuesRes.json();
       
@@ -90,12 +92,58 @@ function App() {
   };
 
   useEffect(() => {
+    setWalkIns({});
     fetchData();
   }, [shopId, date]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const recalculateQueues = async (next: Record<number, number>) => {
+    setIsRecalculating(true);
+    try {
+      const activeHours = Object.keys(next)
+        .map(Number)
+        .filter((h) => (next[h] ?? 0) > 0)
+        .sort((a, b) => a - b);
+
+      let url = `${API_URL}/api/queues?shop_id=${shopId}&date=${date}`;
+      if (activeHours.length > 0) {
+        const rawWalkIns = activeHours.map((h) => `${h}:${next[h]}`).join(',');
+        url += `&walk_ins=${encodeURIComponent(rawWalkIns)}`;
+      }
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('API Queues recalculate error');
+      const data: ShopQueueData[] = await res.json();
+      const currentShopQueue = data.find((q) => q.shop_id === shopId);
+      setWalkIns(next);
+      setQueueMetrics(currentShopQueue || null);
+    } catch {
+      triggerToast('No se pudo recalcular la cola. Probá de nuevo.');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  const handleAddWalkIn = (hour: number) => {
+    const current = walkIns[hour] || 0;
+    if (current >= 20) return;
+    const next = { ...walkIns, [hour]: current + 1 };
+    recalculateQueues(next);
+  };
+
+  const handleRemoveWalkIn = (hour: number) => {
+    const current = walkIns[hour] || 0;
+    if (current <= 0) return;
+    const next = { ...walkIns, [hour]: current - 1 };
+    recalculateQueues(next);
+  };
+
+  const handleResetWalkIns = () => {
+    recalculateQueues({});
   };
 
   const handleAction = async (app: Appointment, actionType: 'whatsapp' | 'confirm') => {
@@ -218,6 +266,12 @@ function App() {
             <QueueMetricsColumn 
               queueMetrics={queueMetrics}
               shopId={shopId}
+              walkIns={walkIns}
+              onAddWalkIn={handleAddWalkIn}
+              onRemoveWalkIn={handleRemoveWalkIn}
+              onResetWalkIns={handleResetWalkIns}
+              isRecalculating={isRecalculating}
+              isFallbackMode={isFallbackMode}
             />
           )}
         </main>

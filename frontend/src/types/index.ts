@@ -1,13 +1,23 @@
 export interface QueueMetrics {
   utilization: number;
   p0: number;
-  Lq: number;
-  Wq_hours: number;
-  Wq_minutes: number;
-  L: number;
-  W_hours: number;
-  W_minutes: number;
+  Lq: number | null;
+  Wq_hours: number | null;
+  Wq_minutes: number | null;
+  L: number | null;
+  W_hours: number | null;
+  W_minutes: number | null;
   stable: boolean;
+}
+
+export interface SlotQueueData {
+  hour: number;
+  label: string;
+  scheduled: number;
+  expected_attendance: number;
+  walk_ins: number;
+  lambda_rate: number;
+  metrics: QueueMetrics;
 }
 
 export interface ShopQueueData {
@@ -18,6 +28,8 @@ export interface ShopQueueData {
   metrics: QueueMetrics;
   active_barbers?: string[] | null;
   inactive_barbers?: string[] | null;
+  date?: string | null;
+  slots?: SlotQueueData[] | null;
 }
 
 export interface Appointment {
@@ -34,6 +46,7 @@ export interface Appointment {
   is_self_booked: number;
   target: number | null;
   ausentismo_risk: 'ALTO' | 'MEDIO' | 'BAJO' | string;
+  noshow_probability?: number | null;
   color_code: string;
   diagnostic?: string;
 }
