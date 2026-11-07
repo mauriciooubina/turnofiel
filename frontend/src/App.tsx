@@ -7,6 +7,7 @@ import { AbsenteeismAlerts } from '@/components/AbsenteeismAlerts';
 import { ToastNotification } from '@/components/ToastNotification';
 import { ConnectionAlert } from '@/components/ConnectionAlert';
 import { SimulateAppointmentModal } from '@/components/SimulateAppointmentModal';
+import { ExportModal } from '@/components/ExportModal';
 import { PrivacyPanel } from '@/components/PrivacyPanel';
 import { FALLBACK_QUEUES, FALLBACK_CALENDAR } from '@/data/fallbackData';
 import {
@@ -41,6 +42,7 @@ function App() {
   const [isFallbackMode, setIsFallbackMode] = useState<boolean>(false);
   const [isConnectionAlertDismissed, setIsConnectionAlertDismissed] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
 
   const [queueMetrics, setQueueMetrics] = useState<ShopQueueData | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -328,6 +330,7 @@ function App() {
         setDate={setDate}
         isFallbackMode={isFallbackMode}
         onRefresh={() => fetchData()}
+        onExport={() => setIsExportModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         username={session?.username ?? null}
@@ -343,6 +346,15 @@ function App() {
         shopId={shopId}
         currentDate={date}
         onAppointmentCreated={handleAppointmentCreated}
+      />
+
+      {/* Operative Data Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        shopId={shopId}
+        date={date}
+        onExported={() => triggerToast('Exportación descargada.')}
       />
 
       {loading ? (

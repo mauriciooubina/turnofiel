@@ -168,6 +168,39 @@
   color: #0f172a;
 }
 
+.navbar-export-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: auto;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.navbar-export-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.navbar-export-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .navbar-btn-label {
+    display: none;
+  }
+}
+
 /* Button Agendar Turno in Agenda diaria's header */
 .btn-agendar-turno {
   display: inline-flex;

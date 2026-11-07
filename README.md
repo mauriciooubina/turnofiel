@@ -33,6 +33,7 @@ pfi/
 │   │   │   └── gradient_boosting_model.joblib # Modelo predictivo serializado (Gradient Boosting)
 │   │   ├── routers/
 │   │   │   ├── calendar.py      # Endpoints GET /api/calendar y POST /api/calendar/simulate
+│   │   │   ├── export.py        # Endpoint GET /api/export (descarga CSV)
 │   │   │   └── queues.py        # Endpoint GET /api/queues
 │   │   ├── schemas/             # DTOs y validación con Pydantic v2
 │   │   │   ├── calendar.py
@@ -40,6 +41,7 @@ pfi/
 │   │   └── services/
 │   │       ├── db_service.py    # Consultas SQL para PostgreSQL
 │   │       ├── calendar_service.py # Servicio de agenda con detección predictiva de riesgo
+│   │       ├── export_service.py # Generación y formateo de exportación CSV
 │   │       ├── ml_service.py    # Carga del modelo e inferencia de riesgo (ALTO / MEDIO / BAJO)
 │   │       └── queue_service.py # Servicio de serving para teoría de colas M/M/s
 │   └── tests/                   # Tests de pytest (API, servicios, modelo ML, colas)
@@ -63,6 +65,7 @@ pfi/
 │   ├── create_users.py          # Creación de tabla users y carga de usuarios con contraseñas bcrypt
 │   ├── queuing_theory.py        # Cálculo estocástico de parámetros M/M/s (λ, μ, ρ, Lq, Wq)
 │   ├── train_models.py          # Entrenamiento y comparación de modelos (validación cruzada estratificada)
+│   ├── retrain_model.py         # Reentrenamiento periódico y calibración por sucursal
 │   ├── tune_hyperparams.py      # Búsqueda en grilla de hiperparámetros (valida la configuración de train_models.py)
 │   ├── plots/                   # Gráficos generados (matriz de confusión, curvas ROC)
 │   └── utils.py                 # Auxiliares criptográficos y DateTime
@@ -72,7 +75,7 @@ pfi/
     ├── vite.config.ts
     └── src/
         ├── App.tsx              # Componente principal con navegación por pestañas y modo Fallback
-        ├── components/          # Agenda, alertas de ausentismo, métricas M/M/s y simulación de turnos
+        ├── components/          # Agenda, alertas de ausentismo, métricas M/M/s, simulación y ExportModal.tsx
         ├── data/
         │   └── fallbackData.ts  # Datos estáticos de resiliencia local
         └── types/               # Tipos TypeScript de los contratos de la API
@@ -235,6 +238,49 @@ La interfaz incluye la pestaña **Privacidad (ARCO)** para gestionar las solicit
   - `POST /api/privacy/requests`: registra una solicitud de privacidad (`do_not_contact`, `allow_contact` o `erasure`) en `client_privacy_requests`.
 - **Reset de la demo**: el script `reset_demo.py` ahora vacía tanto `preventive_actions` como `client_privacy_requests`, restaurando el estado original de la demo sin alterar los turnos históricos (`appointments`).
 
+### Reentrenamiento y calibración periódica
+
+El script `data_pipeline/retrain_model.py` implementa el ciclo de reentrenamiento y calibración periódica del clasificador de ausentismo (Gradient Boosting) declarado en el PFI:
+
+- **Qué hace**: evalúa un modelo candidato mediante validación cruzada estratificada de 5 pliegues (5-Fold Stratified CV), calcula métricas académicas (F1-score, Recall, Precisión, ROC-AUC, Brier score), evalúa la calibración global y segmentada por sucursal (`by_shop`) en las tres bandas de riesgo (`BAJO`, `MEDIO`, `ALTO`), compara probabilísticamente el candidato con el modelo productivo actual y genera un candidato serializado junto con un informe detallado en JSON.
+- **Fuentes de datos (`--source`)**:
+  - `--source postgres` (por defecto): consulta directamente la base de datos PostgreSQL mediante un join entre `appointments` y `services`. Excluye automáticamente a los clientes que hayan presentado una solicitud de supresión de datos (`erasure` en `client_privacy_requests`). Dado que la columna `appointments.lead_time_hours` se almacena como `NUMERIC(10,2)` (redondeo a 2 decimales), la antelación presenta variaciones marginales frente al valor continuo de la matriz procesada, lo cual puede generar leves diferencias en las probabilidades predichas, lo que puede cambiar el nivel de riesgo de algunas decenas de turnos sobre 5.320; el número exacto queda en `comparison_with_production` del reporte.
+  - `--source csv`: entrena leyendo directamente `data/processed/processed_appointments_matrix.csv`. Reproduce con exacta precisión de punto flotante las métricas documentadas en la tesis y el modelo productivo actual (modo de reproducibilidad y auditoría).
+- **Integridad y seguridad**: por defecto, el reentrenamiento **no reemplaza** el modelo productivo y nunca reescribe ni modifica `data/processed/ml_metrics_summary.json`.
+- **Artefactos generados**:
+  - Candidato: `backend/app/models/candidates/gradient_boosting_candidate_<timestamp>.joblib`
+  - Reporte: `data/processed/retraining/retrain_report_<timestamp>.json`
+- **Promoción a producción (`--promote`)**: al incluir el modificador `--promote`, el script resguarda primero una copia del modelo productivo vigente en `backend/app/models/backups/gradient_boosting_model_<timestamp>.joblib` y luego reemplaza de forma atómica `backend/app/models/gradient_boosting_model.joblib`. Para que el backend cargue en memoria el nuevo clasificador serializado, es necesario reiniciar el servicio:
+  ```bash
+  docker compose restart backend
+  ```
+- **Automatización mensual sugerida (Cron)**:
+  La calibración periódica puede programarse mensualmente mediante cron ejecutando el script dentro del contenedor `tools`:
+  ```bash
+  0 3 1 * * cd /ruta/a/pfi && docker compose run --rm tools python data_pipeline/retrain_model.py >> logs/retrain.log 2>&1
+  ```
+  *(Nota: la carpeta `logs/` debe ser creada previamente en caso de no existir; los archivos `*.log` ya están excluidos en `.gitignore`)*.
+
+### Exportación de datos operativos
+
+El sistema permite exportar el historial de turnos y evaluaciones de riesgo operativo para su análisis externo o auditoría comercial:
+
+- **Endpoint REST**: `GET /api/export`
+- **Parámetros de consulta**: `shop_id` (`hellfish` o `hooligans`), `date_from` (`YYYY-MM-DD`) y `date_to` (`YYYY-MM-DD`).
+- **Límite temporal y validaciones**: el rango máximo permitido entre `date_from` y `date_to` es de 31 días (inclusive). Se valida que `date_to >= date_from`. Si se solicita un rango mayor a 31 días, la API responde con código `422 Unprocessable Entity`.
+- **Control de acceso por roles**:
+  - El usuario `admin` tiene autorización para descargar datos operativos de cualquiera de los dos comercios.
+  - Los usuarios de comercio (`hellfish`, `hooligans`) solo pueden acceder y exportar los datos correspondientes a su propia sucursal; si intentan consultar otro comercio se rechaza con código `403 Forbidden`.
+- **Formato y compatibilidad del CSV**:
+  - Delimitador: punto y coma (`;`).
+  - Codificación: UTF-8 con BOM (`\ufeff`), garantizando apertura directa en Microsoft Excel sin problemas de tildes o caracteres especiales.
+  - Separador decimal: coma (ej. `0,9685`, `18000,00`).
+  - Fin de línea: CRLF (`\r\n`).
+  - Protección contra CSV Injection: celdas que comiencen con `=`, `+`, `-`, `@`, tabulador o retorno de carro se sanitizan automáticamente anteponiendo un apóstrofe (`'`).
+- **Estructura de columnas (17 campos)**:
+  `fecha`, `hora_inicio`, `hora_fin`, `turno_id`, `profesional`, `servicio`, `precio_servicio`, `duracion_min`, `cliente_hash`, `canal`, `riesgo`, `probabilidad_ausencia`, `accion_sugerida`, `contacto_bloqueado`, `datos_suprimidos`, `acciones_registradas`, `asistencia_real`.
+- **Protección de datos (Ley 25.326)**: los clientes que hayan ejercido su derecho de supresión de datos se exportan con el identificador `cliente_hash` en blanco (`""`) y con el campo `datos_suprimidos` marcado en `"sí"`.
+
 ### Regenerar datos y modelo (opcional)
 
 Los datos procesados de `data/processed/` y el modelo `gradient_boosting_model.joblib` ya están versionados, así que este paso no es necesario para correr el sistema. Para regenerarlos hacen falta los CSVs originales de `data/raw/`, que no se incluyen en el repositorio por contener datos personales:
@@ -268,6 +314,7 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | `GET` | `/api/queues` | Devuelve los parámetros del modelo $M/M/s$ en tres modos: sin parámetros (métricas históricas por comercio), `?lambda_rate=&mu_rate=&servers=` (cálculo directo, CP5) y `?shop_id=&date=&walk_ins=12:2,18:1` (franjas horarias del día con λ = Σ(1−p) + walk-ins, sin guardar nada). |
 | `POST` | `/api/actions` | Registra una acción preventiva (`whatsapp` o `confirm`) sobre un turno en `preventive_actions`. |
 | `GET` | `/api/actions?shop_id={hellfish\|hooligans}` | Devuelve el historial de acciones preventivas registradas para un comercio. |
+| `GET` | `/api/export?shop_id={hellfish\|hooligans}&date_from={YYYY-MM-DD}&date_to={YYYY-MM-DD}` | Descarga en archivo CSV los turnos del rango (hasta 31 días) con nivel de riesgo, probabilidad y acción sugerida. |
 
 ---
 

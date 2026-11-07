@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Download, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff, ShieldCheck } from 'lucide-react';
 import logoImg from '@/assets/logo.jpg';
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
   setDate: (date: string) => void;
   isFallbackMode: boolean;
   onRefresh: () => void;
+  onExport: () => void;
   activeTab: 'agenda' | 'queues' | 'privacy';
   setActiveTab: (tab: 'agenda' | 'queues' | 'privacy') => void;
   username: string | null;
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   setDate,
   isFallbackMode,
   onRefresh,
+  onExport,
   activeTab,
   setActiveTab,
   username,
@@ -109,6 +111,21 @@ export const Header: React.FC<HeaderProps> = ({
             title="Recargar datos"
           >
             <RefreshCw size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={isFallbackMode || isLocalDemo}
+            className="navbar-export-btn"
+            title={
+              isFallbackMode || isLocalDemo
+                ? 'La exportación requiere conexión con el backend'
+                : 'Exportar CSV'
+            }
+            aria-label="Exportar CSV"
+          >
+            <Download size={13} />
+            <span className="navbar-btn-label">Exportar CSV</span>
           </button>
         </div>
 

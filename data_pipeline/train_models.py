@@ -31,6 +31,13 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR, exist_ok=True)
 os.makedirs(LATEX_IMG_DIR, exist_ok=True)
 
+FEATURES_NUM = [
+    'clean_lead_time', 'catalog_price', 'duration', 'hour_of_day',
+    'client_past_apps', 'client_past_noshows', 'client_noshow_rate'
+]
+FEATURES_CAT = ['shop_id', 'is_self_booked', 'day_of_week', 'month', 'barber_id', 'client_is_new']
+GB_PARAMS = {'n_estimators': 150, 'max_depth': 4, 'learning_rate': 0.08, 'random_state': 42}
+
 def compute_channel_lead_time_medians(df):
     """Mediana de lead_time_hours (solo registros con antelación >= 0) por canal de reserva.
     Devuelve (mediana_personal, mediana_autogestion) para is_self_booked 0 y 1."""
@@ -38,10 +45,10 @@ def compute_channel_lead_time_medians(df):
     med_1 = df[(df['lead_time_hours'] >= 0) & (df['is_self_booked'] == 1)]['lead_time_hours'].median()
     return med_0, med_1
 
-def load_and_preprocess_data(csv_path):
-    print(f"[+] Cargando datos desde {csv_path}...")
-    df = pd.read_csv(csv_path)
-    
+def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, list, list]:
+    """Prepara las características y target a partir de un DataFrame de turnos."""
+    df = df.copy()
+
     # 1. Limpieza de lead_time_hours (antelación)
     med_0, med_1 = compute_channel_lead_time_medians(df)
     df['clean_lead_time'] = df['lead_time_hours']
@@ -65,13 +72,8 @@ def load_and_preprocess_data(csv_path):
     )
     df['client_is_new'] = (df['client_past_apps'] == 0).astype(int)
     
-    features_num = [
-        'clean_lead_time', 'catalog_price', 'duration', 'hour_of_day',
-        'client_past_apps', 'client_past_noshows', 'client_noshow_rate'
-    ]
-    features_cat = [
-        'shop_id', 'is_self_booked', 'day_of_week', 'month', 'barber_id', 'client_is_new'
-    ]
+    features_num = list(FEATURES_NUM)
+    features_cat = list(FEATURES_CAT)
     
     X = df[features_num + features_cat].copy()
     X['barber_id'] = X['barber_id'].astype(str)
@@ -79,6 +81,16 @@ def load_and_preprocess_data(csv_path):
     
     print(f"[+] Dataset procesado: {len(X)} muestras (Clase 0: {np.sum(y == 0)}, Clase 1: {np.sum(y == 1)})")
     return X, y, features_num, features_cat
+
+def load_and_preprocess_data(source):
+    """Carga y procesa datos de turnos desde una ruta de archivo CSV o un DataFrame de pandas."""
+    if isinstance(source, pd.DataFrame):
+        print(f"[+] Procesando {len(source)} turnos desde un DataFrame...")
+        return prepare_features(source)
+    else:
+        print(f"[+] Cargando datos desde {source}...")
+        df = pd.read_csv(source)
+        return prepare_features(df)
 
 def build_preprocessor(features_num, features_cat):
     num_transformer = Pipeline([
@@ -96,6 +108,13 @@ def build_preprocessor(features_num, features_cat):
         ]
     )
 
+def build_final_pipeline(features_num, features_cat) -> Pipeline:
+    """Construye el pipeline completo de preprocesamiento y clasificador Gradient Boosting."""
+    return Pipeline([
+        ('prep', build_preprocessor(features_num, features_cat)),
+        ('clf', GradientBoostingClassifier(**GB_PARAMS))
+    ])
+
 def train_and_evaluate(X, y, preprocessor):
     ratio = (len(y) - sum(y)) / sum(y)
     
@@ -107,7 +126,7 @@ def train_and_evaluate(X, y, preprocessor):
             n_estimators=150, class_weight='balanced', max_depth=8, random_state=42
         ),
         'Gradient Boosting': GradientBoostingClassifier(
-            n_estimators=150, max_depth=4, learning_rate=0.08, random_state=42
+            **GB_PARAMS
         ),
         'XGBoost': xgb.XGBClassifier(
             n_estimators=150, max_depth=4, learning_rate=0.08, scale_pos_weight=ratio,
@@ -234,14 +253,9 @@ def plot_and_save_charts(roc_curves_data, best_cm):
     plt.close(fig)
     print(f"   -> Matriz de Confusión guardada en {cm_plot_path} y {latex_cm_path}")
 
-def export_final_model(X, y, preprocessor):
+def export_final_model(X, y, features_num, features_cat):
     print("[+] Entrenando modelo final Gradient Boosting en el dataset completo...")
-    final_pipeline = Pipeline([
-        ('prep', preprocessor),
-        ('clf', GradientBoostingClassifier(
-            n_estimators=150, max_depth=4, learning_rate=0.08, random_state=42
-        ))
-    ])
+    final_pipeline = build_final_pipeline(features_num, features_cat)
     final_pipeline.fit(X, y)
     
     model_export_path = os.path.join(MODELS_DIR, 'gradient_boosting_model.joblib')
@@ -269,7 +283,7 @@ def main():
     
     plot_and_save_charts(roc_curves_data, best_cm)
     
-    export_final_model(X, y, preprocessor)
+    export_final_model(X, y, features_num, features_cat)
     print("\n[✔] Proceso de entrenamiento y serialización completado con éxito.")
 
 if __name__ == '__main__':

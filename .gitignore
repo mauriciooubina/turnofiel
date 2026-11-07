@@ -33,3 +33,8 @@ frontend/dist/
 
 # Datasets crudos con datos personales (Ley 25.326)
 data/raw/
+
+# Reentrenamiento (candidatos, backups y reportes locales)
+backend/app/models/candidates/
+backend/app/models/backups/
+data/processed/retraining/
