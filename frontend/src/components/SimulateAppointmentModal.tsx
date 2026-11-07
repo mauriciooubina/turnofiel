@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, CalendarPlus, UserCheck, UserPlus, AlertTriangle, Users } from 'lucide-react';
 import type { Appointment } from '@/types';
+import { apiFetch, UnauthorizedError } from '@/utils';
 
 interface SimulateAppointmentModalProps {
   isOpen: boolean;
@@ -205,7 +206,7 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
     };
 
     try {
-      const res = await fetch(`${API_URL}/api/calendar/simulate`, {
+      const res = await apiFetch(`${API_URL}/api/calendar/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -218,7 +219,11 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
       const createdApp: Appointment = await res.json();
       onAppointmentCreated(createdApp);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (err instanceof UnauthorizedError) {
+        onClose();
+        return;
+      }
       console.warn('Fallo backend al simular turno:', err);
       setErrorMsg('No se pudo conectar con el backend. El riesgo de cada turno lo calcula el modelo predictivo del servidor, así que el turno no se agendó. Verificá la conexión y volvé a intentar.');
     } finally {

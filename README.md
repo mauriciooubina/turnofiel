@@ -60,6 +60,7 @@ pfi/
 ├── data_pipeline/               # Pipeline de Ingeniería de Datos y Simulación
 │   ├── etl_pipeline.py          # Proceso ETL: limpieza, aislamiento de bloqueos y hashing SHA-256
 │   ├── init_db.py               # Script de creación del esquema relacional e ingesta en PostgreSQL
+│   ├── create_users.py          # Creación de tabla users y carga de usuarios con contraseñas bcrypt
 │   ├── queuing_theory.py        # Cálculo estocástico de parámetros M/M/s (λ, μ, ρ, Lq, Wq)
 │   ├── train_models.py          # Entrenamiento y comparación de modelos (validación cruzada estratificada)
 │   ├── tune_hyperparams.py      # Búsqueda en grilla de hiperparámetros (valida la configuración de train_models.py)
@@ -127,7 +128,16 @@ DB_PASS=<contraseña-de-postgres>
 # Salts Criptográficos (Ley 25.326)
 HELLFISH_SALT=<sal-secreta-hellfish>
 HOOLIGANS_SALT=<sal-secreta-hooligans>
+
+# Autenticación
+JWT_SECRET=<cadena-aleatoria-de-32-o-más-caracteres>
+JWT_EXPIRE_MINUTES=480
+ADMIN_PASSWORD=<contraseña-admin>
+HELLFISH_PASSWORD=<contraseña-hellfish>
+HOOLIGANS_PASSWORD=<contraseña-hooligans>
 ```
+
+> El backend no arranca sin `JWT_SECRET`; generala con `openssl rand -hex 32`; las contraseñas van solo en el `.env`.
 
 > Las sales son secretas: definilas solo en tu `.env` local (que no se versiona) y nunca las escribas en el código ni en la documentación. Docker Compose no levanta el backend si `HELLFISH_SALT` o `HOOLIGANS_SALT` no están definidas.
 
@@ -153,6 +163,9 @@ docker compose up -d
 ```bash
 # Crea las 6 tablas relacionales (la 6.ª es preventive_actions, vacía) e inserta los 5.320 turnos procesados
 .venv/bin/python data_pipeline/init_db.py
+
+# Crea la tabla users y guarda los 3 usuarios con su contraseña hasheada con bcrypt (se puede volver a correr para cambiar contraseñas)
+.venv/bin/python data_pipeline/create_users.py
 ```
 
 > Los turnos se cargan desde `data/processed/` y los barberos y servicios desde `data/seed/` (versionado, sin datos de contacto). No hace falta `data/raw/`. El esquema declara claves foráneas de `appointments` hacia `barbers` y `services`. Ojo: el script borra y recrea todas las tablas, incluidas las acciones preventivas registradas.
@@ -177,6 +190,16 @@ Para volver al día uno de la demo sin tocar los turnos históricos (`appointmen
 ```bash
 .venv/bin/python data_pipeline/reset_demo.py
 ```
+
+### Usuarios y roles
+
+El sistema cuenta con autenticación y control de acceso por roles:
+- El usuario `admin` ve ambos comercios.
+- Los usuarios `hellfish` y `hooligans` solo ven su propio comercio (el backend responde 403 Forbidden si se solicita el otro).
+- Las sesiones utilizan un token JWT con vencimiento de 8 h (`JWT_EXPIRE_MINUTES=480`), guardado en `sessionStorage`.
+- En caso de no tener backend disponible, la pantalla de login ofrece entrar a la **Modalidad Local Demo**.
+- El login siempre consulta PostgreSQL para validar contraseñas con bcrypt; sin embargo, una sesión ya abierta sigue funcionando con el fallback CSV en caso de caída de la base de datos.
+- Los scripts `init_db.py` y `reset_demo.py` no borran los usuarios de la tabla `users`.
 
 ### Regenerar datos y modelo (opcional)
 

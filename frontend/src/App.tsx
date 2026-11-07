@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
+import { LoginScreen } from '@/components/LoginScreen';
 import { QueueMetricsColumn } from '@/components/QueueMetricsColumn';
 import { AgendaTimeline } from '@/components/AgendaTimeline';
 import { AbsenteeismAlerts } from '@/components/AbsenteeismAlerts';
@@ -7,31 +8,45 @@ import { ToastNotification } from '@/components/ToastNotification';
 import { ConnectionAlert } from '@/components/ConnectionAlert';
 import { SimulateAppointmentModal } from '@/components/SimulateAppointmentModal';
 import { FALLBACK_QUEUES, FALLBACK_CALENDAR } from '@/data/fallbackData';
-import { buildReminderMessage, buildWhatsAppUrl } from '@/utils';
+import {
+  apiFetch,
+  clearSession,
+  loadSession,
+  AUTH_UNAUTHORIZED_EVENT,
+  UnauthorizedError,
+  buildReminderMessage,
+  buildWhatsAppUrl,
+} from '@/utils';
+import type { AuthSession } from '@/utils';
 import type { ShopQueueData, Appointment, PreventiveActionResponse } from '@/types';
 import '@/styles/App.css';
 
 const DEFAULT_DATES: Record<'hellfish' | 'hooligans', string> = {
   hooligans: '2026-01-21',
-  hellfish: '2026-06-04'
+  hellfish: '2026-06-04',
 };
 
 function App() {
-  const [shopId, setShopId] = useState<'hellfish' | 'hooligans'>('hooligans');
-  const [date, setDate] = useState<string>(DEFAULT_DATES['hooligans']);
+  const [session, setSession] = useState<AuthSession | null>(() => loadSession());
+  const [isLocalDemo, setIsLocalDemo] = useState<boolean>(false);
+  const [loginNotice, setLoginNotice] = useState<string | null>(null);
+
+  const initialShop: 'hellfish' | 'hooligans' = session?.shop_id ?? 'hooligans';
+  const [shopId, setShopId] = useState<'hellfish' | 'hooligans'>(initialShop);
+  const [date, setDate] = useState<string>(DEFAULT_DATES[initialShop]);
   const [activeTab, setActiveTab] = useState<'agenda' | 'queues'>('agenda');
-  
+
   const [loading, setLoading] = useState<boolean>(true);
   const [isFallbackMode, setIsFallbackMode] = useState<boolean>(false);
   const [isConnectionAlertDismissed, setIsConnectionAlertDismissed] = useState<boolean>(false);
   const [isSimulateModalOpen, setIsSimulateModalOpen] = useState<boolean>(false);
-  
+
   const [queueMetrics, setQueueMetrics] = useState<ShopQueueData | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
   const [walkIns, setWalkIns] = useState<Record<number, number>>({});
   const [isRecalculating, setIsRecalculating] = useState<boolean>(false);
-  
+
   const [triggeredActions, setTriggeredActions] = useState<Record<number, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -42,26 +57,86 @@ function App() {
     setDate(DEFAULT_DATES[newShop]);
   };
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setSession(null);
+      setTriggeredActions({});
+      setLoginNotice('Tu sesión expiró. Volvé a iniciar sesión.');
+      setAppointments([]);
+      setQueueMetrics(null);
+      setSelectedAppId(null);
+      setWalkIns({});
+      setLoading(true);
+    };
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
+  }, []);
+
+  const handleLogin = (s: AuthSession) => {
+    setSession(s);
+    setLoginNotice(null);
+    setIsLocalDemo(false);
+    setTriggeredActions({});
+    if (s.shop_id) {
+      handleShopChange(s.shop_id);
+    }
+  };
+
+  const handleEnterLocalDemo = () => {
+    setIsLocalDemo(true);
+    setLoginNotice(null);
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setSession(null);
+    setIsLocalDemo(false);
+    setTriggeredActions({});
+    setLoginNotice(null);
+    setAppointments([]);
+    setQueueMetrics(null);
+    setSelectedAppId(null);
+    setWalkIns({});
+    setLoading(true);
+  };
+
   const fetchData = async () => {
+    if (!session && !isLocalDemo) {
+      return;
+    }
+
+    if (isLocalDemo) {
+      setIsFallbackMode(true);
+      const currentFallbackShop = FALLBACK_QUEUES.find((q) => q.shop_id === shopId);
+      setQueueMetrics(currentFallbackShop || null);
+
+      const snapshot = FALLBACK_CALENDAR[shopId];
+      setAppointments(snapshot.date === date ? snapshot.appointments : []);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const queuesRes = await fetch(`${API_URL}/api/queues?shop_id=${shopId}&date=${date}`);
+      const queuesRes = await apiFetch(`${API_URL}/api/queues?shop_id=${shopId}&date=${date}`);
       if (!queuesRes.ok) throw new Error('API Queues error');
       const queuesData: ShopQueueData[] = await queuesRes.json();
-      
+
       const currentShopQueue = queuesData.find((q) => q.shop_id === shopId);
       setQueueMetrics(currentShopQueue || null);
 
-      const calendarRes = await fetch(`${API_URL}/api/calendar?shop_id=${shopId}&date=${date}`);
+      const calendarRes = await apiFetch(`${API_URL}/api/calendar?shop_id=${shopId}&date=${date}`);
       if (!calendarRes.ok) throw new Error('API Calendar error');
       const calendarData = await calendarRes.json();
-      
+
       setAppointments(calendarData.appointments || []);
       setIsFallbackMode(false);
       setIsConnectionAlertDismissed(false);
 
       try {
-        const actionsRes = await fetch(`${API_URL}/api/actions?shop_id=${shopId}`);
+        const actionsRes = await apiFetch(`${API_URL}/api/actions?shop_id=${shopId}`);
         if (actionsRes.ok) {
           const actionsData: PreventiveActionResponse[] = await actionsRes.json();
           const fromServer: Record<number, string> = {};
@@ -72,18 +147,24 @@ function App() {
               fromServer[act.appointment_id] = 'whatsapp';
             }
           }
-          setTriggeredActions(prev => ({ ...prev, ...fromServer }));
+          setTriggeredActions((prev) => ({ ...prev, ...fromServer }));
         }
       } catch (actionsErr) {
-        console.warn("Could not load actions history:", actionsErr);
+        if (actionsErr instanceof UnauthorizedError) {
+          return;
+        }
+        console.warn('Could not load actions history:', actionsErr);
       }
     } catch (err) {
-      console.warn("FastAPI backend is offline or unreachable. Loading fallback static mock data for demo...");
+      if (err instanceof UnauthorizedError) {
+        return;
+      }
+      console.warn('FastAPI backend is offline or unreachable. Loading fallback static mock data for demo...');
       setIsFallbackMode(true);
-      
+
       const currentFallbackShop = FALLBACK_QUEUES.find((q) => q.shop_id === shopId);
       setQueueMetrics(currentFallbackShop || null);
-      
+
       const snapshot = FALLBACK_CALENDAR[shopId];
       setAppointments(snapshot.date === date ? snapshot.appointments : []);
     } finally {
@@ -94,7 +175,7 @@ function App() {
   useEffect(() => {
     setWalkIns({});
     fetchData();
-  }, [shopId, date]);
+  }, [shopId, date, session, isLocalDemo]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -115,13 +196,16 @@ function App() {
         url += `&walk_ins=${encodeURIComponent(rawWalkIns)}`;
       }
 
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error('API Queues recalculate error');
       const data: ShopQueueData[] = await res.json();
       const currentShopQueue = data.find((q) => q.shop_id === shopId);
       setWalkIns(next);
       setQueueMetrics(currentShopQueue || null);
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        return;
+      }
       triggerToast('No se pudo recalcular la cola. Probá de nuevo.');
     } finally {
       setIsRecalculating(false);
@@ -148,17 +232,18 @@ function App() {
 
   const handleAction = async (app: Appointment, actionType: 'whatsapp' | 'confirm') => {
     let message: string | null = null;
-    const baseText = actionType === 'whatsapp'
-      ? `Se abrió WhatsApp con el recordatorio del turno #${app.id}.`
-      : `Turno #${app.id} confirmado.`;
+    const baseText =
+      actionType === 'whatsapp'
+        ? `Se abrió WhatsApp con el recordatorio del turno #${app.id}.`
+        : `Turno #${app.id} confirmado.`;
 
     if (actionType === 'whatsapp') {
       message = buildReminderMessage(app, shopId);
       const url = buildWhatsAppUrl(message);
       window.open(url, '_blank', 'noopener,noreferrer');
-      setTriggeredActions(prev => ({ ...prev, [app.id]: 'whatsapp' }));
+      setTriggeredActions((prev) => ({ ...prev, [app.id]: 'whatsapp' }));
     } else {
-      setTriggeredActions(prev => ({ ...prev, [app.id]: 'confirmed' }));
+      setTriggeredActions((prev) => ({ ...prev, [app.id]: 'confirmed' }));
     }
 
     if (isFallbackMode) {
@@ -167,15 +252,15 @@ function App() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/actions`, {
+      const res = await apiFetch(`${API_URL}/api/actions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           appointment_id: app.id,
           shop_id: shopId,
           action_type: actionType,
-          message
-        })
+          message,
+        }),
       });
 
       if (res.ok) {
@@ -183,7 +268,10 @@ function App() {
       } else {
         triggerToast(`${baseText} No se pudo registrar la acción en el servidor.`);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        return;
+      }
       triggerToast(`${baseText} No se pudo registrar la acción en el servidor.`);
     }
   };
@@ -192,8 +280,8 @@ function App() {
     if (newApp.date && newApp.date !== date) {
       setDate(newApp.date);
     }
-    setAppointments(prev => {
-      const filtered = prev.filter(a => a.id !== newApp.id);
+    setAppointments((prev) => {
+      const filtered = prev.filter((a) => a.id !== newApp.id);
       const updated = [...filtered, newApp].sort((a, b) => a.start_time.localeCompare(b.start_time));
       return updated;
     });
@@ -202,21 +290,31 @@ function App() {
     triggerToast('Turno agendado exitosamente.');
   };
 
+  if (!session && !isLocalDemo) {
+    return (
+      <LoginScreen
+        apiUrl={API_URL}
+        onLogin={handleLogin}
+        onEnterLocalDemo={handleEnterLocalDemo}
+        notice={loginNotice}
+      />
+    );
+  }
+
   return (
     <div className="app-container">
-      
       {/* Fallback Connection Alert */}
-      <ConnectionAlert 
-        visible={isFallbackMode && !isConnectionAlertDismissed} 
-        snapshotDate={FALLBACK_CALENDAR[shopId].date} 
-        onClose={() => setIsConnectionAlertDismissed(true)} 
+      <ConnectionAlert
+        visible={isFallbackMode && !isConnectionAlertDismissed}
+        snapshotDate={FALLBACK_CALENDAR[shopId].date}
+        onClose={() => setIsConnectionAlertDismissed(true)}
       />
 
       {/* Notification popup alert */}
       <ToastNotification message={toastMessage} />
 
       {/* Header controls & tabs section */}
-      <Header 
+      <Header
         shopId={shopId}
         setShopId={handleShopChange}
         date={date}
@@ -225,10 +323,14 @@ function App() {
         onRefresh={fetchData}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        username={session?.username ?? null}
+        canSwitchShop={isLocalDemo || session?.role === 'admin'}
+        isLocalDemo={isLocalDemo}
+        onLogout={handleLogout}
       />
 
       {/* Live Demo Simulation Modal */}
-      <SimulateAppointmentModal 
+      <SimulateAppointmentModal
         isOpen={isSimulateModalOpen}
         onClose={() => setIsSimulateModalOpen(false)}
         shopId={shopId}
@@ -246,15 +348,15 @@ function App() {
           {activeTab === 'agenda' ? (
             /* TAB 1: Agenda & Alerts (2-Column Grid) */
             <div className="view-grid-agenda fade-in">
-              <AgendaTimeline 
-                appointments={appointments} 
+              <AgendaTimeline
+                appointments={appointments}
                 triggeredActions={triggeredActions}
                 selectedAppId={selectedAppId}
-                onSelectApp={(id) => setSelectedAppId(prev => prev === id ? null : id)}
+                onSelectApp={(id) => setSelectedAppId((prev) => (prev === id ? null : id))}
                 onOpenSimulateModal={() => setIsSimulateModalOpen(true)}
               />
 
-              <AbsenteeismAlerts 
+              <AbsenteeismAlerts
                 appointments={appointments}
                 triggeredActions={triggeredActions}
                 handleAction={handleAction}
@@ -263,7 +365,7 @@ function App() {
             </div>
           ) : (
             /* TAB 2: Queuing Theory Detailed Analytics View */
-            <QueueMetricsColumn 
+            <QueueMetricsColumn
               queueMetrics={queueMetrics}
               shopId={shopId}
               walkIns={walkIns}
@@ -281,4 +383,3 @@ function App() {
 }
 
 export default App;
-

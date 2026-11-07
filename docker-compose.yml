@@ -33,6 +33,8 @@ services:
       - DB_NAME=${DB_NAME:-pfi_db}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASS=${DB_PASS:?Definir DB_PASS en .env}
+      - JWT_SECRET=${JWT_SECRET:?Definir JWT_SECRET en .env}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-480}
     depends_on:
       - postgres
     restart: always

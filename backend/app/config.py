@@ -28,3 +28,8 @@ SERVICES_CSV = {
     "hellfish": os.path.join(RAW_DIR, "hellfish", "services.csv"),
     "hooligans": os.path.join(RAW_DIR, "hooligans", "services.csv")
 }
+
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
+
