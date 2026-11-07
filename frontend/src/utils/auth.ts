@@ -68,7 +68,13 @@ export function clearSession(): void {
   }
 }
 
-export async function apiFetch(url: string, init: RequestInit = {}): Promise<Response> {
+export const API_TIMEOUT_MS = 8000;
+
+export async function apiFetch(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number = API_TIMEOUT_MS,
+): Promise<Response> {
   const session = loadSession();
   const headers = new Headers(init.headers || {});
   if (session?.access_token) {
@@ -78,6 +84,7 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   const response = await fetch(url, {
     ...init,
     headers,
+    signal: init.signal ?? AbortSignal.timeout(timeoutMs),
   });
 
   if (response.status === 401) {

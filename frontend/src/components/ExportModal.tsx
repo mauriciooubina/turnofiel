@@ -78,7 +78,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const res = await apiFetch(
         `${API_URL}/api/export?shop_id=${encodeURIComponent(shopId)}&date_from=${encodeURIComponent(
           dateFrom
-        )}&date_to=${encodeURIComponent(dateTo)}`
+        )}&date_to=${encodeURIComponent(dateTo)}`,
+        {},
+        30000
       );
 
       if (!res.ok) {

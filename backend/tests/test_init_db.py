@@ -81,3 +81,25 @@ def test_init_db_does_not_read_raw():
     with open(init_db_path, "r", encoding="utf-8") as f:
         content = f.read()
     assert '"raw"' not in content
+
+
+@pytest.mark.parametrize(
+    "start,end,expected",
+    [
+        ("2026-04-14 15:00:00", "15:30:00", "2026-04-14 15:30:00"),
+        ("2026-04-14 15:00:00", None, None),
+        ("2026-04-14 15:00:00", float("nan"), None),
+        (None, "15:30:00", None),
+        (float("nan"), "15:30:00", None),
+        ("2026-04-14 15:00:00", "abc", None),
+        ("abc", "15:30:00", None),
+        ("2026-04-14 23:30:00", "00:15:00", "2026-04-15 00:15:00"),
+        ("2026-04-14 15:00:00", "", None),
+        ("2026-04-14 15:00:00", "   ", None),
+        ("", "15:30:00", None),
+        ("   ", "15:30:00", None),
+    ],
+)
+def test_build_end_timestamp(start, end, expected):
+    assert init_db.build_end_timestamp(start, end) == expected
+

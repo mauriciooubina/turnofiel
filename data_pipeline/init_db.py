@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime, time, timedelta
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
@@ -176,6 +177,52 @@ def read_seed_services(base_dir: str) -> list:
     ]
 
 
+def build_end_timestamp(appointment_start, end_time) -> str | None:
+    """Combina la fecha de appointment_start con la hora de end_time.
+
+    Reglas:
+    - Si alguno falta (None, NaN, vacío/solo espacios) o no se puede parsear, retorna None.
+    - Devuelve 'YYYY-MM-DD HH:MM:SS' combinando fecha de inicio y hora de fin.
+    - Si la hora de fin es anterior o igual a la de inicio (cruza medianoche), suma 1 día.
+    - Nunca lanza excepciones.
+    """
+    try:
+        if appointment_start is None or end_time is None:
+            return None
+        if pd.isna(appointment_start) or pd.isna(end_time):
+            return None
+        if isinstance(appointment_start, str) and not appointment_start.strip():
+            return None
+        if isinstance(end_time, str) and not end_time.strip():
+            return None
+
+        start_dt = pd.to_datetime(appointment_start)
+        if pd.isna(start_dt):
+            return None
+
+        start_date = start_dt.date()
+        start_time = start_dt.time()
+
+        if isinstance(end_time, time):
+            parsed_end_time = end_time
+        else:
+            str_end = str(end_time).strip()
+            try:
+                parsed_end_time = datetime.strptime(str_end, "%H:%M:%S").time()
+            except ValueError:
+                parsed_end_time = datetime.strptime(str_end, "%H:%M").time()
+
+        if parsed_end_time <= start_time:
+            end_date = start_date + timedelta(days=1)
+        else:
+            end_date = start_date
+
+        end_dt = datetime.combine(end_date, parsed_end_time)
+        return end_dt.strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError, Exception):
+        return None
+
+
 def populate_database(base_dir):
     barber_tuples = read_seed_barbers(base_dir)
     service_tuples = read_seed_services(base_dir)
@@ -216,7 +263,7 @@ def populate_database(base_dir):
                 str(r.get('barber_id', '')), str(r.get('service_id', '')),
                 str(r.get('client_hashed', '')), str(r.get('phone_hashed', '')),
                 str(r['appointment_start']) if pd.notna(r.get('appointment_start')) else None,
-                None,
+                build_end_timestamp(r.get('appointment_start'), r.get('end_time')),
                 float(r['price']) if pd.notna(r.get('price')) else 0.0,
                 bool(r['paid']) if pd.notna(r.get('paid')) else False,
                 int(r['is_self_booked']) if pd.notna(r.get('is_self_booked')) else 0,
