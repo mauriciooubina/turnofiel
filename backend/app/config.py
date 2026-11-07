@@ -33,3 +33,8 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
 
+SHOP_SALTS = {
+    "hellfish": os.getenv("HELLFISH_SALT"),
+    "hooligans": os.getenv("HOOLIGANS_SALT"),
+}
+

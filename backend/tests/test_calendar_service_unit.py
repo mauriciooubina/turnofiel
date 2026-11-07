@@ -14,7 +14,7 @@ from app.schemas.calendar import SimulateAppointmentRequest
 # ---------------------------------------------------------------------------
 
 def test_simulate_profile_matias():
-    req = SimulateAppointmentRequest(client_profile="matias")
+    req = SimulateAppointmentRequest(client_profile="matias", privacy_consent=True)
     result = simulate_appointment_service(req)
     assert result.client_hashed == "Matías Giménez"
     assert "2 inasistencias sobre 4" in result.diagnostic
@@ -22,19 +22,19 @@ def test_simulate_profile_matias():
 
 @pytest.mark.parametrize("profile", ["tomas", "nuevo"])
 def test_simulate_profile_tomas_and_nuevo(profile):
-    req = SimulateAppointmentRequest(client_profile=profile)
+    req = SimulateAppointmentRequest(client_profile=profile, privacy_consent=True)
     result = simulate_appointment_service(req)
     assert result.diagnostic.startswith("Cliente nuevo")
 
 
 def test_simulate_profile_unknown_or_gonzalo():
-    req = SimulateAppointmentRequest(client_profile="gonzalo")
+    req = SimulateAppointmentRequest(client_profile="gonzalo", privacy_consent=True)
     result = simulate_appointment_service(req)
     assert result.diagnostic.startswith("Alerta predictiva")
 
 
 def test_simulate_past_date_with_lead_time_hours():
-    req = SimulateAppointmentRequest(date="2020-01-01", lead_time_hours=48.0)
+    req = SimulateAppointmentRequest(date="2020-01-01", lead_time_hours=48.0, privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", return_value=("BAJO", "#10b981", 0.1)) as mock_predict:
         simulate_appointment_service(req)
         assert mock_predict.called
@@ -43,7 +43,7 @@ def test_simulate_past_date_with_lead_time_hours():
 
 
 def test_simulate_past_date_without_lead_time_hours():
-    req = SimulateAppointmentRequest(date="2020-01-01", lead_time_hours=None)
+    req = SimulateAppointmentRequest(date="2020-01-01", lead_time_hours=None, privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", return_value=("BAJO", "#10b981", 0.1)) as mock_predict:
         simulate_appointment_service(req)
         assert mock_predict.called
@@ -52,7 +52,7 @@ def test_simulate_past_date_without_lead_time_hours():
 
 
 def test_simulate_invalid_date_without_lead_time_hours():
-    req = SimulateAppointmentRequest(date="no-es-fecha", lead_time_hours=None)
+    req = SimulateAppointmentRequest(date="no-es-fecha", lead_time_hours=None, privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", return_value=("BAJO", "#10b981", 0.1)) as mock_predict:
         simulate_appointment_service(req)
         assert mock_predict.called
@@ -63,7 +63,7 @@ def test_simulate_invalid_date_without_lead_time_hours():
 
 
 def test_simulate_invalid_start_time():
-    req = SimulateAppointmentRequest(start_time="xx:yy")
+    req = SimulateAppointmentRequest(start_time="xx:yy", privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", return_value=("BAJO", "#10b981", 0.1)) as mock_predict:
         result = simulate_appointment_service(req)
         assert result.end_time == "16:30:00"
@@ -72,7 +72,7 @@ def test_simulate_invalid_start_time():
 
 
 def test_simulate_predict_error_raises_http_500():
-    req = SimulateAppointmentRequest()
+    req = SimulateAppointmentRequest(privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", side_effect=RuntimeError("Engine failure")):
         with pytest.raises(HTTPException) as exc_info:
             simulate_appointment_service(req)
@@ -81,13 +81,13 @@ def test_simulate_predict_error_raises_http_500():
 
 
 def test_simulate_custom_client_name_with_profile_franco():
-    req = SimulateAppointmentRequest(client_profile="franco", client_name="Ana")
+    req = SimulateAppointmentRequest(client_profile="franco", client_name="Ana", privacy_consent=True)
     result = simulate_appointment_service(req)
     assert result.client_hashed == "Ana"
 
 
 def test_simulate_future_date_calculates_positive_delta():
-    req = SimulateAppointmentRequest(date="2099-01-01", start_time="10:00:00")
+    req = SimulateAppointmentRequest(date="2099-01-01", start_time="10:00:00", privacy_consent=True)
     with patch("app.services.calendar_service.predict_appointment_risk", return_value=("BAJO", "#10b981", 0.1)) as mock_predict:
         res = simulate_appointment_service(req)
         assert res.id >= 9000

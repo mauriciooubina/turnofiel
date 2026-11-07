@@ -36,6 +36,7 @@ DROP TABLE IF EXISTS barbers CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS queue_metrics CASCADE;
 DROP TABLE IF EXISTS preventive_actions CASCADE;
+DROP TABLE IF EXISTS client_privacy_requests CASCADE;
 
 CREATE TABLE barbers (
     id VARCHAR(50) NOT NULL,
@@ -124,6 +125,15 @@ CREATE TABLE preventive_actions (
     shop_id VARCHAR(50) NOT NULL,
     action_type VARCHAR(20) NOT NULL CHECK (action_type IN ('whatsapp', 'confirm')),
     message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE client_privacy_requests (
+    id SERIAL PRIMARY KEY,
+    shop_id VARCHAR(50) NOT NULL,
+    client_hashed VARCHAR(64) NOT NULL,
+    request_type VARCHAR(20) NOT NULL CHECK (request_type IN ('do_not_contact', 'allow_contact', 'erasure')),
+    requested_by VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 """

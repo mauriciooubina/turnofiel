@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff, ShieldCheck } from 'lucide-react';
 import logoImg from '@/assets/logo.jpg';
 
 interface HeaderProps {
@@ -9,8 +9,8 @@ interface HeaderProps {
   setDate: (date: string) => void;
   isFallbackMode: boolean;
   onRefresh: () => void;
-  activeTab: 'agenda' | 'queues';
-  setActiveTab: (tab: 'agenda' | 'queues') => void;
+  activeTab: 'agenda' | 'queues' | 'privacy';
+  setActiveTab: (tab: 'agenda' | 'queues' | 'privacy') => void;
   username: string | null;
   canSwitchShop: boolean;
   isLocalDemo: boolean;
@@ -65,6 +65,13 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <BarChart2 size={15} />
           <span>Análisis de Colas M/M/s</span>
+        </button>
+        <button
+          className={`nav-seg-tab ${activeTab === 'privacy' ? 'active' : ''}`}
+          onClick={() => setActiveTab('privacy')}
+        >
+          <ShieldCheck size={15} />
+          <span>Privacidad (ARCO)</span>
         </button>
       </nav>
 

@@ -12,9 +12,10 @@ APP_TABLES = (
     "queue_metrics",
     "preventive_actions",
     "users",
+    "client_privacy_requests",
 )
-INSERT_TABLES = ("preventive_actions",)
-SEQUENCES = ("preventive_actions_id_seq",)
+INSERT_TABLES = ("preventive_actions", "client_privacy_requests")
+SEQUENCES = ("preventive_actions_id_seq", "client_privacy_requests_id_seq")
 FORBIDDEN_ROLE_NAMES = ("postgres",)
 ROLE_NAME_RE = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 MIN_APP_PASSWORD_LEN = 12

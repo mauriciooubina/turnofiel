@@ -7,6 +7,7 @@ import { AbsenteeismAlerts } from '@/components/AbsenteeismAlerts';
 import { ToastNotification } from '@/components/ToastNotification';
 import { ConnectionAlert } from '@/components/ConnectionAlert';
 import { SimulateAppointmentModal } from '@/components/SimulateAppointmentModal';
+import { PrivacyPanel } from '@/components/PrivacyPanel';
 import { FALLBACK_QUEUES, FALLBACK_CALENDAR } from '@/data/fallbackData';
 import {
   apiFetch,
@@ -34,7 +35,7 @@ function App() {
   const initialShop: 'hellfish' | 'hooligans' = session?.shop_id ?? 'hooligans';
   const [shopId, setShopId] = useState<'hellfish' | 'hooligans'>(initialShop);
   const [date, setDate] = useState<string>(DEFAULT_DATES[initialShop]);
-  const [activeTab, setActiveTab] = useState<'agenda' | 'queues'>('agenda');
+  const [activeTab, setActiveTab] = useState<'agenda' | 'queues' | 'privacy'>('agenda');
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isFallbackMode, setIsFallbackMode] = useState<boolean>(false);
@@ -102,7 +103,7 @@ function App() {
     setLoading(true);
   };
 
-  const fetchData = async () => {
+  const fetchData = async (opts?: { silent?: boolean }) => {
     if (!session && !isLocalDemo) {
       return;
     }
@@ -118,7 +119,7 @@ function App() {
       return;
     }
 
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     try {
       const queuesRes = await apiFetch(`${API_URL}/api/queues?shop_id=${shopId}&date=${date}`);
       if (!queuesRes.ok) throw new Error('API Queues error');
@@ -231,6 +232,10 @@ function App() {
   };
 
   const handleAction = async (app: Appointment, actionType: 'whatsapp' | 'confirm') => {
+    if (actionType === 'whatsapp' && app.contact_blocked) {
+      triggerToast('El cliente pidió no ser contactado: no se abrió WhatsApp.');
+      return;
+    }
     let message: string | null = null;
     const baseText =
       actionType === 'whatsapp'
@@ -265,6 +270,8 @@ function App() {
 
       if (res.ok) {
         triggerToast(`${baseText} Acción registrada.`);
+      } else if (res.status === 409) {
+        triggerToast('El cliente pidió no ser contactado: no se registró el recordatorio.');
       } else {
         triggerToast(`${baseText} No se pudo registrar la acción en el servidor.`);
       }
@@ -320,7 +327,7 @@ function App() {
         date={date}
         setDate={setDate}
         isFallbackMode={isFallbackMode}
-        onRefresh={fetchData}
+        onRefresh={() => fetchData()}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         username={session?.username ?? null}
@@ -363,7 +370,7 @@ function App() {
                 selectedAppId={selectedAppId}
               />
             </div>
-          ) : (
+          ) : activeTab === 'queues' ? (
             /* TAB 2: Queuing Theory Detailed Analytics View */
             <QueueMetricsColumn
               queueMetrics={queueMetrics}
@@ -374,6 +381,13 @@ function App() {
               onResetWalkIns={handleResetWalkIns}
               isRecalculating={isRecalculating}
               isFallbackMode={isFallbackMode}
+            />
+          ) : (
+            /* TAB 3: Privacy and ARCO Rights */
+            <PrivacyPanel
+              shopId={shopId}
+              isFallbackMode={isFallbackMode}
+              onPrivacyChanged={() => fetchData({ silent: true })}
             />
           )}
         </main>

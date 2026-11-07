@@ -49,6 +49,8 @@ export interface Appointment {
   noshow_probability?: number | null;
   color_code: string;
   diagnostic?: string;
+  contact_blocked?: boolean;
+  client_erased?: boolean;
 }
 
 export interface PreventiveActionRequest {
@@ -65,4 +67,38 @@ export interface PreventiveActionResponse {
   action_type: string;
   message?: string | null;
   created_at: string;
+}
+
+export interface PrivacyClientAppointment {
+  id: number;
+  date: string;
+  start_time: string;
+  service_name?: string | null;
+  barber_name?: string | null;
+  target?: number | null;
+}
+
+export interface PrivacyClientRecord {
+  client_hashed: string;
+  total_appointments: number;
+  no_shows: number;
+  do_not_contact: boolean;
+  erased: boolean;
+  erased_at?: string | null;
+  appointments: PrivacyClientAppointment[];
+}
+
+export interface PrivacySearchResponse {
+  shop_id: 'hellfish' | 'hooligans';
+  query_type: 'phone' | 'client_hashed';
+  clients: PrivacyClientRecord[];
+}
+
+export type PrivacyRequestType = 'do_not_contact' | 'allow_contact' | 'erasure';
+
+export interface PrivacyStateResponse {
+  client_hashed: string;
+  do_not_contact: boolean;
+  erased: boolean;
+  erased_at?: string | null;
 }

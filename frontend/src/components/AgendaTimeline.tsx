@@ -181,7 +181,7 @@ export const AgendaTimeline: React.FC<AgendaTimelineProps> = ({
                       )}
                     </div>
                     <div className="client-title" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      <span>Cliente {app.client_hashed}</span>
+                      <span>{app.client_erased ? 'Cliente datos suprimidos' : `Cliente ${app.client_hashed}`}</span>
                     </div>
                     <div className="service-sub">
                       <span>{app.service_name}</span>

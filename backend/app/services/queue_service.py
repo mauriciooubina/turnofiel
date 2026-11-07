@@ -12,6 +12,12 @@ _SLOT_BASE_CACHE: Dict[Tuple[str, str], dict] = {}
 OPERATING_HOURS = range(10, 20)
 MAX_WALK_INS_PER_SLOT = 20
 
+def clear_slot_cache(shop_id: str) -> None:
+    """Borra de _SLOT_BASE_CACHE las entradas de ese comercio (un pedido de privacidad cambia los riesgos)."""
+    keys_to_del = [k for k in _SLOT_BASE_CACHE if k[0].lower() == shop_id.lower()]
+    for k in keys_to_del:
+        _SLOT_BASE_CACHE.pop(k, None)
+
 def _sanitize_metrics(m: dict) -> dict:
     sanitized = {}
     for k, v in m.items():

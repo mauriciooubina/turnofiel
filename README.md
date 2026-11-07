@@ -223,6 +223,18 @@ El sistema cuenta con autenticación y control de acceso por roles:
 - El login siempre consulta PostgreSQL para validar contraseñas con bcrypt; sin embargo, una sesión ya abierta sigue funcionando con el fallback CSV en caso de caída de la base de datos.
 - Los scripts `init_db.py` y `reset_demo.py` no borran los usuarios de la tabla `users`.
 
+### Privacidad (Ley 25.326)
+
+La interfaz incluye la pestaña **Privacidad (ARCO)** para gestionar las solicitudes de derechos ARCO realizadas por los clientes al comercio:
+- **Búsqueda**: acepta el identificador seudonimizado (`client_hashed` de 16 caracteres) o el número de teléfono del cliente. El teléfono se hashea en el servidor con la sal del comercio y nunca se guarda, imprime ni devuelve.
+- **Acciones y botones**:
+  - `No contactar` / `Permitir contacto` (derecho de oposición): bloquea las alertas automáticas de WhatsApp para los turnos del cliente sin cancelar la posibilidad de confirmar turnos manualmente.
+  - `Suprimir datos` (derecho de cancelación / supresión, Art. 16): desvincula la cita de referencias identificables; los turnos históricos se preservan de forma agregada para estadísticas y colas pero el modelo predictivo los evalúa sin historial (como cliente nuevo). La supresión se aplica dinámicamente al leer (los turnos históricos en `appointments` no se modifican).
+- **Endpoints REST**:
+  - `POST /api/privacy/search`: busca los registros y turnos de un cliente por hash o por teléfono.
+  - `POST /api/privacy/requests`: registra una solicitud de privacidad (`do_not_contact`, `allow_contact` o `erasure`) en `client_privacy_requests`.
+- **Reset de la demo**: el script `reset_demo.py` ahora vacía tanto `preventive_actions` como `client_privacy_requests`, restaurando el estado original de la demo sin alterar los turnos históricos (`appointments`).
+
 ### Regenerar datos y modelo (opcional)
 
 Los datos procesados de `data/processed/` y el modelo `gradient_boosting_model.joblib` ya están versionados, así que este paso no es necesario para correr el sistema. Para regenerarlos hacen falta los CSVs originales de `data/raw/`, que no se incluyen en el repositorio por contener datos personales:

@@ -111,6 +111,7 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [privacyConsent, setPrivacyConsent] = useState<boolean>(false);
 
   // Sync state whenever shopId or currentDate changes
   useEffect(() => {
@@ -127,7 +128,10 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
   }, [shopId, currentDate]);
 
   useEffect(() => {
-    if (isOpen) setErrorMsg(null);
+    if (isOpen) {
+      setErrorMsg(null);
+      setPrivacyConsent(false);
+    }
   }, [isOpen]);
 
   // Handle service dropdown change with auto-fill
@@ -202,7 +206,8 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
       lead_time_hours: leadTimeInfo.hours,
       client_profile: profile,
       client_name: currentProfileData.name,
-      is_self_booked: bookingChannel === 'WEB' ? 1 : 0
+      is_self_booked: bookingChannel === 'WEB' ? 1 : 0,
+      privacy_consent: privacyConsent
     };
 
     try {
@@ -393,12 +398,27 @@ export const SimulateAppointmentModal: React.FC<SimulateAppointmentModalProps> =
             </div>
           )}
 
+          {/* Consentimiento de privacidad */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={privacyConsent}
+                onChange={(e) => setPrivacyConsent(e.target.checked)}
+              />
+              El cliente aceptó el aviso de privacidad al reservar
+            </label>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', paddingLeft: '24px', lineHeight: 1.35 }}>
+              Aviso del formulario de reserva del comercio: tus datos de contacto se usan solo para confirmar tu reserva y enviarte alertas de agenda (Ley 25.326).
+            </span>
+          </div>
+
           {/* Footer Buttons */}
           <div className="modal-footer" style={{ margin: '-24px', marginTop: '0', padding: '16px 24px' }}>
             <button type="button" className="modal-cancel-btn" onClick={onClose}>
               Cancelar
             </button>
-            <button type="submit" className="modal-submit-btn" disabled={isSubmitting}>
+            <button type="submit" className="modal-submit-btn" disabled={isSubmitting || !privacyConsent}>
               {isSubmitting ? (
                 <>
                   <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />

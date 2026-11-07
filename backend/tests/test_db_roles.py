@@ -130,32 +130,32 @@ def test_grant_app_privileges_all_tables_present():
         assert "grant all" not in lower_repr
         assert "superuser" not in lower_repr
 
-    # GRANT SELECT para las 7 tablas
+    # GRANT SELECT para las 8 tablas
     select_grants = [
         s for s in executed_sqls
         if "GRANT SELECT" in s
     ]
-    assert len(select_grants) == len(APP_TABLES) == 7
+    assert len(select_grants) == len(APP_TABLES) == 8
     for table in APP_TABLES:
         assert any(f"Identifier('{table}')" in s and "Identifier('pfi_app')" in s for s in select_grants)
 
-    # GRANT INSERT solo para preventive_actions
+    # GRANT INSERT para preventive_actions y client_privacy_requests
     insert_grants = [
         s for s in executed_sqls
         if "GRANT INSERT" in s
     ]
-    assert len(insert_grants) == 1
-    assert "Identifier('preventive_actions')" in insert_grants[0]
-    assert "Identifier('pfi_app')" in insert_grants[0]
+    assert len(insert_grants) == 2
+    assert any("Identifier('preventive_actions')" in s and "Identifier('pfi_app')" in s for s in insert_grants)
+    assert any("Identifier('client_privacy_requests')" in s and "Identifier('pfi_app')" in s for s in insert_grants)
 
-    # GRANT USAGE ON SEQUENCE para preventive_actions_id_seq
+    # GRANT USAGE ON SEQUENCE para las 2 secuencias
     seq_grants = [
         s for s in executed_sqls
         if "GRANT USAGE ON SEQUENCE" in s
     ]
-    assert len(seq_grants) == 1
-    assert "Identifier('preventive_actions_id_seq')" in seq_grants[0]
-    assert "Identifier('pfi_app')" in seq_grants[0]
+    assert len(seq_grants) == 2
+    assert any("Identifier('preventive_actions_id_seq')" in s and "Identifier('pfi_app')" in s for s in seq_grants)
+    assert any("Identifier('client_privacy_requests_id_seq')" in s and "Identifier('pfi_app')" in s for s in seq_grants)
 
 
 def test_grant_app_privileges_users_missing():

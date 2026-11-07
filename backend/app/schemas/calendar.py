@@ -18,6 +18,8 @@ class AppointmentResponse(BaseModel):
     noshow_probability: Optional[float] = None
     color_code: str
     diagnostic: Optional[str] = None
+    contact_blocked: bool = False
+    client_erased: bool = False
 
 class CalendarResponse(BaseModel):
     shop_id: str
@@ -38,4 +40,5 @@ class SimulateAppointmentRequest(BaseModel):
     client_profile: str = "franco"  # "franco" | "matias" | "tomas" | "gonzalo" (or legacy: "fiel" | "nuevo" | "riesgo")
     client_name: Optional[str] = None
     is_self_booked: int = 1
+    privacy_consent: bool = False
 

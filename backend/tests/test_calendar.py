@@ -61,7 +61,8 @@ def test_simulate_appointment_fiel(client):
         "start_time": "15:00:00",
         "lead_time_hours": 2.0,
         "client_profile": "fiel",
-        "is_self_booked": 0
+        "is_self_booked": 0,
+        "privacy_consent": True
     }
     response = client.post("/api/calendar/simulate", json=payload)
     assert response.status_code == 200
@@ -81,7 +82,8 @@ def test_simulate_appointment_riesgo(client):
         "start_time": "18:00:00",
         "lead_time_hours": 72.0,
         "client_profile": "riesgo",
-        "is_self_booked": 1
+        "is_self_booked": 1,
+        "privacy_consent": True
     }
     response = client.post("/api/calendar/simulate", json=payload)
     assert response.status_code == 200

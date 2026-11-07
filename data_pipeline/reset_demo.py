@@ -1,4 +1,4 @@
-"""Reset de la demo: vacía preventive_actions sin tocar los turnos históricos (appointments)."""
+"""Reset de la demo: vacía preventive_actions y client_privacy_requests sin tocar los turnos históricos (appointments)."""
 
 import os
 import sys
@@ -21,19 +21,33 @@ CREATE TABLE IF NOT EXISTS preventive_actions (
 );
 """
 
+CREATE_PRIVACY_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS client_privacy_requests (
+    id SERIAL PRIMARY KEY,
+    shop_id VARCHAR(50) NOT NULL,
+    client_hashed VARCHAR(64) NOT NULL,
+    request_type VARCHAR(20) NOT NULL CHECK (request_type IN ('do_not_contact', 'allow_contact', 'erasure')),
+    requested_by VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+"""
+
 def reset_demo():
-    """Elimina las acciones preventivas registradas y reinicia el contador de id."""
+    """Elimina las acciones preventivas y pedidos de privacidad registrados y reinicia los contadores de id."""
     conn = get_db_connection()
     try:
         cur = conn.cursor()
         try:
             cur.execute(CREATE_ACTIONS_TABLE_SQL)
+            cur.execute(CREATE_PRIVACY_TABLE_SQL)
             cur.execute("SELECT COUNT(*) FROM preventive_actions;")
-            count = cur.fetchone()[0]
-            cur.execute("TRUNCATE TABLE preventive_actions RESTART IDENTITY;")
+            n_acciones = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM client_privacy_requests;")
+            n_privacidad = cur.fetchone()[0]
+            cur.execute("TRUNCATE TABLE preventive_actions, client_privacy_requests RESTART IDENTITY;")
             apply_grants_if_configured(cur)
             conn.commit()
-            print(f"Reset de la demo: {count} acciones preventivas eliminadas. Los turnos históricos (appointments) no se modificaron.")
+            print(f"Reset de la demo: {n_acciones} acciones preventivas y {n_privacidad} pedidos de privacidad eliminados. Los turnos históricos (appointments) no se modificaron.")
         finally:
             cur.close()
     finally:

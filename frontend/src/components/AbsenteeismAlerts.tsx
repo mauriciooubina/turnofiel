@@ -160,7 +160,7 @@ export const AbsenteeismAlerts: React.FC<AbsenteeismAlertsProps> = ({
                   
                   <div className="alert-item-header">
                     <span className="alert-client-hash">
-                      Turno #{app.id} - Cliente: {app.client_hashed}
+                      Turno #{app.id} - {app.client_erased ? 'Cliente: datos suprimidos' : `Cliente: ${app.client_hashed}`}
                     </span>
                     <span className={`risk-badge ${app.ausentismo_risk.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
                       {app.ausentismo_risk}
@@ -206,14 +206,21 @@ export const AbsenteeismAlerts: React.FC<AbsenteeismAlertsProps> = ({
                       </>
                     ) : (
                       <>
-                        <button 
-                          className="action-trigger-btn"
-                          title="Abre WhatsApp con un mensaje personalizado y registra la acción"
-                          onClick={() => handleAction(app, 'whatsapp')}
-                        >
-                          <MessageSquare size={14} />
-                          Recordatorio por WhatsApp
-                        </button>
+                        {app.contact_blocked ? (
+                          <button className="action-trigger-btn" disabled title="El cliente ejerció su derecho de oposición o supresión (Ley 25.326)">
+                            <MessageSquare size={14} />
+                            No contactar (pedido del cliente)
+                          </button>
+                        ) : (
+                          <button 
+                            className="action-trigger-btn"
+                            title="Abre WhatsApp con un mensaje personalizado y registra la acción"
+                            onClick={() => handleAction(app, 'whatsapp')}
+                          >
+                            <MessageSquare size={14} />
+                            Recordatorio por WhatsApp
+                          </button>
+                        )}
                         <button 
                           className="action-trigger-btn secondary"
                           onClick={() => handleAction(app, 'confirm')}

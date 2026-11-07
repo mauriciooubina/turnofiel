@@ -1539,3 +1539,29 @@
   color: var(--danger);
 }
 
+/* Header: tres pestañas sin desborde horizontal */
+@media (max-width: 1200px) {
+  .app-navbar-unified {
+    flex-wrap: wrap;
+  }
+  .navbar-tabs-segmented {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-navbar-unified {
+    padding: 10px 16px;
+  }
+  .navbar-brand,
+  .navbar-controls {
+    min-width: 0;
+  }
+  .nav-seg-tab {
+    padding: 7px 10px;
+  }
+}
+
+

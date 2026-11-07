@@ -6,6 +6,7 @@ from app.dependencies import ensure_shop_access, get_current_user
 from app.schemas.actions import PreventiveActionRequest, PreventiveActionResponse
 from app.schemas.auth import CurrentUser
 from app.services.actions_service import list_actions, register_action
+from app.services.privacy_service import fetch_privacy_state, get_appointment_client
 
 router = APIRouter(prefix="/api/actions", tags=["Actions"])
 
@@ -23,6 +24,14 @@ def post_action(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="No se pudo registrar la acción preventiva: base de datos no disponible.",
         )
+    if payload.action_type == "whatsapp":
+        try:
+            client = get_appointment_client(payload.shop_id, payload.appointment_id)
+            state = fetch_privacy_state(payload.shop_id).get(client) if client else None
+        except Exception as exc:
+            raise HTTPException(503, "No se pudo registrar la acción preventiva: base de datos no disponible.") from exc
+        if state and (state["erased"] or state["do_not_contact"]):
+            raise HTTPException(409, "El cliente pidió no ser contactado (Ley 25.326): no se registró el recordatorio.")
     try:
         return register_action(payload)
     except Exception as exc:

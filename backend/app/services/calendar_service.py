@@ -1,10 +1,12 @@
 import os
+import numpy as np
 import pandas as pd
 from fastapi import HTTPException
 from app.config import PROCESSED_FILE, DATA_SOURCE
 from app.schemas.calendar import CalendarResponse, AppointmentResponse, SimulateAppointmentRequest
 from app.services.db_service import fetch_appointments_from_db
 from app.services.ml_service import predict_appointment_risk
+from app.services.privacy_service import get_privacy_state_safe
 
 def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
     """Devuelve los turnos de la fecha seleccionada y calcula el riesgo de ausentismo."""
@@ -43,6 +45,28 @@ def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
         else:
             target_date = str(df_date['date'].iloc[0])
 
+        if DATA_SOURCE == "POSTGRES":
+            state = get_privacy_state_safe(shop_id)
+        else:
+            state = {}
+
+        erased = {h for h, v in state.items() if v.get("erased")}
+        blocked = {h for h, v in state.items() if v.get("erased") or v.get("do_not_contact")}
+
+        df_date = df_date.copy()
+        df_date["_erased"] = df_date["client_hashed"].isin(erased)
+        df_date["_blocked"] = df_date["client_hashed"].isin(blocked)
+
+        if erased:
+            df_date.loc[df_date["_erased"], "client_hashed"] = np.nan
+            if all_df is not None:
+                all_df = all_df.copy()
+                all_df.loc[
+                    (all_df["shop_id"].astype(str).str.lower() == shop_id.lower()) &
+                    all_df["client_hashed"].isin(erased),
+                    "client_hashed"
+                ] = np.nan
+
         appointments = []
         
         for _, row in df_date.iterrows():
@@ -67,6 +91,8 @@ def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
 
             if not barber_active or 'inactivo' in barber_name.lower():
                 diag = "El profesional asignado figura inactivo en el sistema."
+            elif row["_erased"]:
+                diag = "Datos del cliente suprimidos a su pedido (Ley 25.326): el riesgo se estima sin su historial."
             elif risk == "ALTO":
                 if past_noshows > 1:
                     diag = f"El cliente no se presentó a {past_noshows} de sus turnos anteriores."
@@ -95,13 +121,15 @@ def get_calendar_data(shop_id: str, date: str = None) -> CalendarResponse:
                     service_name=str(row['service_name']) if pd.notna(row['service_name']) else "Servicio",
                     service_price=float(row['service_price']) if pd.notna(row['service_price']) else 0.0,
                     service_duration=int(row['duration']) if pd.notna(row['duration']) else 30,
-                    client_hashed=str(row['client_hashed']),
+                    client_hashed="" if row["_erased"] else str(row['client_hashed']),
                     is_self_booked=int(row['is_self_booked']),
                     target=int(row['target']) if not pd.isna(row.get('target')) else None,
                     ausentismo_risk=risk,
                     noshow_probability=prob,
                     color_code=color,
-                    diagnostic=diag
+                    diagnostic=diag,
+                    contact_blocked=bool(row["_blocked"]),
+                    client_erased=bool(row["_erased"]),
                 )
             )
             
@@ -126,6 +154,11 @@ def simulate_appointment_service(req: SimulateAppointmentRequest) -> Appointment
     según el perfil de cliente seleccionado para la prueba en vivo.
     Calcula la antelación real contra el momento actual de la reserva (datetime.now()).
     """
+    if not req.privacy_consent:
+        raise HTTPException(
+            status_code=422,
+            detail="El turno entrante no trae el consentimiento informado del cliente (Ley 25.326, Art. 5)."
+        )
     try:
         from datetime import datetime, timedelta
         import hashlib
@@ -250,6 +283,8 @@ def simulate_appointment_service(req: SimulateAppointmentRequest) -> Appointment
             diagnostic=diag
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

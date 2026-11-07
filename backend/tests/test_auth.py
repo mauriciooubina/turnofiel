@@ -138,7 +138,8 @@ def test_case_6_get_auth_me(anon_client):
         "lead_time_hours": 24,
         "client_profile": "matias",
         "client_name": "Matías Giménez",
-        "is_self_booked": 1
+        "is_self_booked": 1,
+        "privacy_consent": True
     }),
     ("GET", "/api/queues", None),
     ("GET", "/api/actions?shop_id=hellfish", None),
@@ -234,6 +235,7 @@ def test_case_9_hellfish_token_access_control(anon_client):
             "client_profile": "matias",
             "client_name": "Matías Giménez",
             "is_self_booked": 1,
+            "privacy_consent": True,
         }
         res = anon_client.post("/api/calendar/simulate", json=payload_hooligans, headers=hellfish_headers)
         assert res.status_code == 403

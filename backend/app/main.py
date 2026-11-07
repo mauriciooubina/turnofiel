@@ -11,7 +11,7 @@ from app.config import CORS_ALLOWED_ORIGINS, BACKEND_HOST, BACKEND_PORT, JWT_SEC
 if not JWT_SECRET or len(JWT_SECRET) < 32:
     raise RuntimeError("Definir JWT_SECRET en .env (mínimo 32 caracteres)")
 
-from app.routers import actions, auth, calendar, queues
+from app.routers import actions, auth, calendar, privacy, queues
 
 app = FastAPI(
     title="Sistema de Predicción de Ausentismo",
@@ -31,6 +31,7 @@ app.include_router(auth.router)
 app.include_router(calendar.router)
 app.include_router(queues.router)
 app.include_router(actions.router)
+app.include_router(privacy.router)
 
 @app.get("/")
 def read_root():

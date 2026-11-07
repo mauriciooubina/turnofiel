@@ -99,7 +99,8 @@ def test_post_action_endpoint_201(client):
     mock_cur.fetchone.return_value = (1, 2814, "hooligans", "whatsapp", "Hola", datetime(2026, 1, 21, 10, 0))
 
     with patch("app.routers.actions.DATA_SOURCE", "POSTGRES"), \
-         patch("app.services.actions_service.get_db_connection", return_value=mock_conn):
+         patch("app.services.actions_service.get_db_connection", return_value=mock_conn), \
+         patch("app.routers.actions.get_appointment_client", return_value=None):
         response = client.post("/api/actions", json={
             "appointment_id": 2814,
             "shop_id": "hooligans",
