@@ -29,6 +29,9 @@ export const QueueSlotsSection: React.FC<QueueSlotsSectionProps> = ({
     Object.values(walkIns).some((v) => v > 0) ||
     Boolean(slots && slots.some((s) => s.walk_ins > 0));
 
+  const dateParts = date ? date.split('-') : [];
+  const displayDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : date;
+
   return (
     <div className="column-card" style={{ marginTop: '4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -38,7 +41,7 @@ export const QueueSlotsSection: React.FC<QueueSlotsSectionProps> = ({
           </h3>
           {date && (
             <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '2px' }}>
-              Fecha: {date}
+              Fecha: {displayDate}
             </p>
           )}
         </div>
@@ -58,13 +61,19 @@ export const QueueSlotsSection: React.FC<QueueSlotsSectionProps> = ({
 
       {isLocalFallback ? (
         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '12px 0' }}>
-          Las colas por franja y la carga de walk-ins necesitan la API en vivo (no disponibles en Modalidad Local Demo).
+          Las colas por franja y la carga de walk-ins necesitan la API en vivo (no disponibles sin conexión).
         </div>
       ) : (
         <>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5, margin: '2px 0 8px 0' }}>
-            λ de cada franja = asistencia esperada de los turnos agendados, Σ(1 − p) con p la probabilidad de ausentismo del modelo, más los walk-ins cargados. Se usan μ = {formatNumber(mu_rate, 3)} servicios/hora y s = {servers} prestadores del comercio. Los walk-ins no se guardan: se pierden al recargar o cambiar de día. ρ ≥ 1 indica que la franja no tiene capacidad libre para walk-ins; los turnos agendados se atienden en su horario.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5, margin: '2px 0 4px 0' }}>
+            Los walk-ins cargados no se guardan: se pierden al recargar o cambiar de día.
           </p>
+          <details style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.5, margin: '0 0 8px 0' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>¿Cómo se calcula?</summary>
+            <p style={{ margin: '6px 0 0 0' }}>
+              λ de cada franja = asistencia esperada de los turnos agendados, Σ(1 − p) con p la probabilidad de ausentismo del modelo, más los walk-ins cargados. Se usan μ = {formatNumber(mu_rate, 3)} servicios/hora y s = {servers} prestadores del comercio. ρ ≥ 1 indica que la franja no tiene capacidad libre para walk-ins; los turnos agendados se atienden en su horario.
+            </p>
+          </details>
 
           <div style={{ overflowX: 'auto' }}>
             <table className="queue-slots-table">

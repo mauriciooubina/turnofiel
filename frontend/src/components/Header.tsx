@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Download, Calendar as CalendarIcon, BarChart2, Wifi, WifiOff, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Download, Calendar as CalendarIcon, BarChart2, WifiOff, ShieldCheck } from 'lucide-react';
 import logoImg from '@/assets/logo.jpg';
 
 interface HeaderProps {
@@ -38,16 +38,12 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 1. Left: Brand Identity (Logo Rectangular) */}
       <div className="navbar-brand">
         <img src={logoImg} alt="TurnoFiel" className="navbar-logo-img" />
-        {isFallbackMode ? (
+        {isFallbackMode && (
           <span
             className="navbar-status-badge fallback"
             title="Sin conexión con el backend: datos locales de respaldo"
           >
-            <WifiOff size={11} /> Modalidad Local Demo
-          </span>
-        ) : (
-          <span className="navbar-status-badge live" title="Conectado al backend">
-            <Wifi size={11} /> Live API
+            <WifiOff size={11} /> Sin conexión
           </span>
         )}
       </div>
@@ -73,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => setActiveTab('privacy')}
         >
           <ShieldCheck size={15} />
-          <span>Privacidad (ARCO)</span>
+          <span>Privacidad</span>
         </button>
       </nav>
 
@@ -132,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* User Session Info & Logout */}
         <div className="navbar-user-capsule">
           <span className="navbar-username-label">
-            {isLocalDemo ? 'Modalidad Local Demo' : (username ?? '')}
+            {isLocalDemo ? 'Sin conexión' : (username ?? '')}
           </span>
           <button
             type="button"

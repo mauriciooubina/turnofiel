@@ -254,7 +254,7 @@ function App() {
     }
 
     if (isFallbackMode) {
-      triggerToast(`${baseText} Modalidad Local Demo: la acción no se guardó.`);
+      triggerToast(`${baseText} Sin conexión: la acción no se guardó.`);
       return;
     }
 

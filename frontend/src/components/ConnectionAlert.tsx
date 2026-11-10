@@ -42,7 +42,7 @@ export const ConnectionAlert: React.FC<ConnectionAlertProps> = ({
       <WifiOff size={20} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '2px' }} />
       <div style={{ flexGrow: 1 }}>
         <div style={{ fontWeight: 700, marginBottom: '2px' }}>
-          Modalidad Local Demo
+          Sin conexión
         </div>
         <div>
           No hay conexión con el backend. Se muestran datos locales de respaldo (agenda del {formattedDate}); el riesgo de turnos nuevos no se puede calcular.

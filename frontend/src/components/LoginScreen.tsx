@@ -74,7 +74,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       <div className="login-card fade-in">
         <div className="login-brand-header">
           <img src={logoImg} alt="TurnoFiel" className="login-logo-img" />
-          <h1 className="login-title">TurnoFiel</h1>
           <p className="login-subtitle">
             Iniciá sesión para ver la agenda de tu comercio
           </p>
@@ -95,7 +94,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 className="login-demo-btn"
                 onClick={onEnterLocalDemo}
               >
-                Entrar en Modalidad Local Demo
+                Entrar sin conexión
               </button>
             )}
           </div>

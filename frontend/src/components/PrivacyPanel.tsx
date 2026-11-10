@@ -141,17 +141,17 @@ export const PrivacyPanel: React.FC<PrivacyPanelProps> = ({
         </h2>
         {isFallbackMode ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '12px' }}>
-            La gestión de privacidad necesita el servidor: no está disponible en Modalidad Local Demo.
+            La gestión de privacidad necesita el servidor: no está disponible sin conexión.
           </p>
         ) : (
           <>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.5, marginBottom: '20px' }}>
-              Gestioná los pedidos que los clientes le hacen al comercio. TurnoFiel solo guarda identificadores con hash: el teléfono que ingreses se convierte en hash en el servidor y no se guarda.
+              Atendé los pedidos de tus clientes sobre sus datos. TurnoFiel no guarda su teléfono: el que ingreses solo se usa para buscarlo.
             </p>
 
             <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label htmlFor="privacy-search-input" style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Teléfono del cliente o identificador (hash)
+                Teléfono o código del cliente
               </label>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <input
@@ -163,7 +163,7 @@ export const PrivacyPanel: React.FC<PrivacyPanelProps> = ({
                   style={{ flex: '1 1 280px', minWidth: '220px' }}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ej: 1123456789 o hash de 16 caracteres"
+                  placeholder="Ej: 1123456789 o 3595c39662f58676"
                 />
                 <button
                   type="submit"
@@ -336,7 +336,7 @@ export const PrivacyPanel: React.FC<PrivacyPanelProps> = ({
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--danger)', fontSize: '0.86rem', lineHeight: 1.45 }}>
                             <ShieldAlert size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
                             <span>
-                              Vas a suprimir los datos de este cliente (Art. 16). Sus turnos van a seguir contando para las estadísticas del comercio, sin ningún vínculo con la persona, y el modelo los va a evaluar sin su historial. No se puede deshacer desde la aplicación.
+                              Vas a suprimir los datos de este cliente. Sus turnos siguen contando en las estadísticas, pero ya no se pueden asociar a él. No se puede deshacer.
                             </span>
                           </div>
                           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -414,7 +414,7 @@ export const PrivacyPanel: React.FC<PrivacyPanelProps> = ({
             )}
 
             {/* Bottom info section */}
-            <div
+            <details
               style={{
                 marginTop: '28px',
                 paddingTop: '16px',
@@ -422,19 +422,19 @@ export const PrivacyPanel: React.FC<PrivacyPanelProps> = ({
                 fontSize: '0.8rem',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.6,
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '8px',
               }}
             >
-              <span>Acceso: esta búsqueda muestra los turnos que TurnoFiel tiene del cliente.</span>
-              <span>·</span>
-              <span>Rectificación: los datos de contacto se corrigen en el sistema de reservas del comercio, de donde provienen.</span>
-              <span>·</span>
-              <span>Cancelación (supresión): botón "Suprimir datos".</span>
-              <span>·</span>
-              <span>Oposición: botón "No contactar".</span>
-            </div>
+              <summary style={{ cursor: 'pointer', fontWeight: 600 }}>¿Qué pide la ley y cómo lo resuelve esta pantalla?</summary>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                <span>Acceso: esta búsqueda muestra los turnos que TurnoFiel tiene del cliente.</span>
+                <span>·</span>
+                <span>Rectificación: los datos de contacto se corrigen en el sistema de reservas del comercio, de donde provienen.</span>
+                <span>·</span>
+                <span>Cancelación (supresión): botón "Suprimir datos".</span>
+                <span>·</span>
+                <span>Oposición: botón "No contactar".</span>
+              </div>
+            </details>
           </>
         )}
       </div>

@@ -224,13 +224,13 @@ El sistema cuenta con autenticación y control de acceso por roles:
 - El usuario `admin` ve ambos comercios.
 - Los usuarios `hellfish` y `hooligans` solo ven su propio comercio (el backend responde 403 Forbidden si se solicita el otro).
 - Las sesiones utilizan un token JWT con vencimiento de 8 h (`JWT_EXPIRE_MINUTES=480`), guardado en `sessionStorage`.
-- En caso de no tener backend disponible, la pantalla de login ofrece entrar a la **Modalidad Local Demo**.
+- En caso de no tener backend disponible, la pantalla de login ofrece entrar **sin conexión**, con datos de respaldo.
 - El login siempre consulta PostgreSQL para validar contraseñas con bcrypt; sin embargo, una sesión ya abierta sigue funcionando con el fallback CSV en caso de caída de la base de datos.
 - Los scripts `init_db.py` y `reset_demo.py` no borran los usuarios de la tabla `users`.
 
 ### Privacidad (Ley 25.326)
 
-La interfaz incluye la pestaña **Privacidad (ARCO)** para gestionar las solicitudes de derechos ARCO realizadas por los clientes al comercio:
+La interfaz incluye la pestaña **Privacidad** para gestionar las solicitudes de derechos ARCO realizadas por los clientes al comercio:
 - **Búsqueda**: acepta el identificador seudonimizado (`client_hashed` de 16 caracteres) o el número de teléfono del cliente. El teléfono se hashea en el servidor con la sal del comercio y nunca se guarda, imprime ni devuelve.
 - **Acciones y botones**:
   - `No contactar` / `Permitir contacto` (derecho de oposición): bloquea las alertas automáticas de WhatsApp para los turnos del cliente sin cancelar la posibilidad de confirmar turnos manualmente.
