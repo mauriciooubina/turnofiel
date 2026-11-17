@@ -24,7 +24,7 @@ import type { ShopQueueData, Appointment, PreventiveActionResponse } from '@/typ
 import '@/styles/App.css';
 
 const DEFAULT_DATES: Record<'hellfish' | 'hooligans', string> = {
-  hooligans: '2026-01-21',
+  hooligans: '2026-05-09',
   hellfish: '2026-06-04',
 };
 

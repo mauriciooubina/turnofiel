@@ -35,7 +35,7 @@ turnofiel/
 │   │   ├── routers/
 │   │   │   ├── actions.py       # Endpoints POST y GET /api/actions
 │   │   │   ├── auth.py          # Endpoints POST /api/auth/login y GET /api/auth/me
-│   │   │   ├── calendar.py      # Endpoints GET /api/calendar y POST /api/calendar/simulate
+│   │   │   ├── calendar.py      # Endpoints GET /api/calendar y POST /api/calendar/simulate (solo demo)
 │   │   │   ├── export.py        # Endpoint GET /api/export (descarga CSV)
 │   │   │   ├── privacy.py       # Endpoints POST /api/privacy/search y /api/privacy/requests
 │   │   │   └── queues.py        # Endpoint GET /api/queues
@@ -329,13 +329,15 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | `POST` | `/api/auth/login` | Valida usuario y contraseña (bcrypt) y devuelve un token JWT. |
 | `GET` | `/api/auth/me` | Devuelve el usuario autenticado y su comercio. |
 | `GET` | `/api/calendar?shop_id={hellfish\|hooligans}&date={YYYY-MM-DD}` | Devuelve la agenda del día con categorización predictiva de riesgo de ausentismo (`ALTO`, `MEDIO`, `BAJO`). |
-| `POST` | `/api/calendar/simulate` | Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
+| `POST` | `/api/calendar/simulate` | **Solo para la demo de la defensa.** Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
 | `GET` | `/api/queues` | Devuelve los parámetros del modelo $M/M/s$ en tres modos: sin parámetros (métricas históricas por comercio), `?lambda_rate=&mu_rate=&servers=` (cálculo directo, CP5) y `?shop_id=&date=&walk_ins=12:2,18:1` (franjas horarias del día con λ = Σ(1−p) + walk-ins, sin guardar nada). |
 | `POST` | `/api/actions` | Registra una acción preventiva (`whatsapp` o `confirm`) sobre un turno en `preventive_actions`. |
 | `GET` | `/api/actions?shop_id={hellfish\|hooligans}` | Devuelve el historial de acciones preventivas registradas para un comercio. |
 | `GET` | `/api/export?shop_id={hellfish\|hooligans}&date_from={YYYY-MM-DD}&date_to={YYYY-MM-DD}` | Descarga en archivo CSV los turnos del rango (hasta 31 días) con nivel de riesgo, probabilidad y acción sugerida. |
 | `POST` | `/api/privacy/search` | Busca los turnos de un cliente por identificador seudonimizado o por teléfono (se hashea en el servidor). |
 | `POST` | `/api/privacy/requests` | Registra una solicitud de privacidad (`do_not_contact`, `allow_contact` o `erasure`). |
+
+> El endpoint `POST /api/calendar/simulate` y el botón **Simular turno entrante** de la agenda existen solo para la demo de la defensa del PFI y no forman parte del MVP: en el producto, los turnos nuevos se incorporan cuando un cliente reserva en el sistema de turnos del comercio.
 
 ---
 
