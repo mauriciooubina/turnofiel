@@ -17,7 +17,7 @@ Proyecto Final de Ingeniería (PFI) - Universidad Argentina de la Empresa (UADE)
 ## Estructura del Proyecto
 
 ```text
-pfi/
+turnofiel/
 ├── .env                         # Variables de entorno locales (no se versiona)
 ├── .env.example                 # Plantilla de variables de entorno (sin secretos)
 ├── docker-compose.yml           # Orquestación de PostgreSQL y FastAPI Backend
@@ -29,20 +29,30 @@ pfi/
 │   ├── app/
 │   │   ├── main.py              # Punto de entrada de FastAPI y middlewares (CORS)
 │   │   ├── config.py            # Carga de variables de entorno y rutas de almacenamiento
+│   │   ├── dependencies.py      # Inyección de dependencias (autenticación JWT y control de acceso)
 │   │   ├── models/
 │   │   │   └── gradient_boosting_model.joblib # Modelo predictivo serializado (Gradient Boosting)
 │   │   ├── routers/
+│   │   │   ├── actions.py       # Endpoints POST y GET /api/actions
+│   │   │   ├── auth.py          # Endpoints POST /api/auth/login y GET /api/auth/me
 │   │   │   ├── calendar.py      # Endpoints GET /api/calendar y POST /api/calendar/simulate
 │   │   │   ├── export.py        # Endpoint GET /api/export (descarga CSV)
+│   │   │   ├── privacy.py       # Endpoints POST /api/privacy/search y /api/privacy/requests
 │   │   │   └── queues.py        # Endpoint GET /api/queues
 │   │   ├── schemas/             # DTOs y validación con Pydantic v2
+│   │   │   ├── actions.py       # Esquemas de solicitud y respuesta de acciones preventivas
+│   │   │   ├── auth.py          # Esquemas de credenciales de login y usuario autenticado
 │   │   │   ├── calendar.py
+│   │   │   ├── privacy.py       # Esquemas de búsqueda, pedidos y estado de privacidad
 │   │   │   └── queues.py
 │   │   └── services/
-│   │       ├── db_service.py    # Consultas SQL para PostgreSQL
+│   │       ├── actions_service.py # Registro y consulta de acciones preventivas en base de datos
+│   │       ├── auth_service.py  # Autenticación de usuarios, hash bcrypt y emisión de tokens JWT
 │   │       ├── calendar_service.py # Servicio de agenda con detección predictiva de riesgo
+│   │       ├── db_service.py    # Consultas SQL para PostgreSQL
 │   │       ├── export_service.py # Generación y formateo de exportación CSV
 │   │       ├── ml_service.py    # Carga del modelo e inferencia de riesgo (ALTO / MEDIO / BAJO)
+│   │       ├── privacy_service.py # Búsqueda de clientes y registro de solicitudes de privacidad
 │   │       └── queue_service.py # Servicio de serving para teoría de colas M/M/s
 │   └── tests/                   # Tests de pytest (API, servicios, modelo ML, colas)
 │
@@ -53,6 +63,7 @@ pfi/
 │   ├── processed/               # Datos procesados y anonimizados (sí se versionan)
 │   │   ├── processed_appointments_matrix.csv
 │   │   ├── consolidated_blocks.csv
+│   │   ├── hyperparam_search_results.json # Métricas de la búsqueda en grilla de hiperparámetros
 │   │   ├── ml_metrics_summary.json
 │   │   └── queue_metrics.json
 │   └── seed/                    # Barberos y servicios para init_db.py (sí se versionan)
@@ -63,6 +74,9 @@ pfi/
 │   ├── etl_pipeline.py          # Proceso ETL: limpieza, aislamiento de bloqueos y hashing SHA-256
 │   ├── init_db.py               # Script de creación del esquema relacional e ingesta en PostgreSQL
 │   ├── create_users.py          # Creación de tabla users y carga de usuarios con contraseñas bcrypt
+│   ├── db_roles.py              # Definición y asignación de permisos mínimos para el rol de app
+│   ├── reset_demo.py            # Vaciado de acciones preventivas y solicitudes para reiniciar la demo
+│   ├── setup_app_role.py        # Creación y configuración del rol restringido en PostgreSQL
 │   ├── queuing_theory.py        # Cálculo estocástico de parámetros M/M/s (λ, μ, ρ, Lq, Wq)
 │   ├── train_models.py          # Entrenamiento y comparación de modelos (validación cruzada estratificada)
 │   ├── retrain_model.py         # Reentrenamiento periódico y calibración por sucursal
@@ -94,7 +108,7 @@ El backend soporta un **Feature Flag de fuente de datos** mediante la variable d
 2. **`DATA_SOURCE=CSV` (Modo Liviano / Local):**
    - Consume directamente los datasets procesados en `data/processed/` sin requerir conexión a base de datos.
 
-El contenedor `pfi_backend` de Docker Compose corre siempre con `DATA_SOURCE=POSTGRES` (definido en `docker-compose.yml`). El valor del `.env` aplica cuando el backend se ejecuta fuera de Docker.
+El contenedor `turnofiel_backend` de Docker Compose corre siempre con `DATA_SOURCE=POSTGRES` (definido en `docker-compose.yml`). El valor del `.env` aplica cuando el backend se ejecuta fuera de Docker.
 
 ---
 
@@ -153,7 +167,7 @@ HOOLIGANS_PASSWORD=<contraseña-hooligans>
 ### 3. Crear el Entorno Virtual de Python
 
 ```bash
-# Desde la raíz del proyecto (pfi/)
+# Desde la raíz del proyecto (turnofiel/)
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
@@ -312,12 +326,16 @@ Una vez iniciado el backend, se puede acceder a la documentación interactiva Op
 | :--- | :--- | :--- |
 | `GET` | `/` | Verifica que el backend esté activo. |
 | `GET` | `/api/health` | Verificación de estado pública (sin login), accesible por HTTPS. |
+| `POST` | `/api/auth/login` | Valida usuario y contraseña (bcrypt) y devuelve un token JWT. |
+| `GET` | `/api/auth/me` | Devuelve el usuario autenticado y su comercio. |
 | `GET` | `/api/calendar?shop_id={hellfish\|hooligans}&date={YYYY-MM-DD}` | Devuelve la agenda del día con categorización predictiva de riesgo de ausentismo (`ALTO`, `MEDIO`, `BAJO`). |
 | `POST` | `/api/calendar/simulate` | Simula la incorporación de un turno nuevo y devuelve su nivel de riesgo de ausentismo y su color de semaforización. |
 | `GET` | `/api/queues` | Devuelve los parámetros del modelo $M/M/s$ en tres modos: sin parámetros (métricas históricas por comercio), `?lambda_rate=&mu_rate=&servers=` (cálculo directo, CP5) y `?shop_id=&date=&walk_ins=12:2,18:1` (franjas horarias del día con λ = Σ(1−p) + walk-ins, sin guardar nada). |
 | `POST` | `/api/actions` | Registra una acción preventiva (`whatsapp` o `confirm`) sobre un turno en `preventive_actions`. |
 | `GET` | `/api/actions?shop_id={hellfish\|hooligans}` | Devuelve el historial de acciones preventivas registradas para un comercio. |
 | `GET` | `/api/export?shop_id={hellfish\|hooligans}&date_from={YYYY-MM-DD}&date_to={YYYY-MM-DD}` | Descarga en archivo CSV los turnos del rango (hasta 31 días) con nivel de riesgo, probabilidad y acción sugerida. |
+| `POST` | `/api/privacy/search` | Busca los turnos de un cliente por identificador seudonimizado o por teléfono (se hashea en el servidor). |
+| `POST` | `/api/privacy/requests` | Registra una solicitud de privacidad (`do_not_contact`, `allow_contact` o `erasure`). |
 
 ---
 
@@ -340,6 +358,17 @@ docker compose run --rm tools pytest backend/tests -q
 | `test_queues.py` | Endpoint y servicio de teoría de colas $M/M/s$, incluido el fallback a archivo si PostgreSQL no responde, franjas con walk-ins y parámetros directos (CP5). |
 | `test_db_service.py` | Consultas a PostgreSQL: usa la base real si está levantada y, si no, una conexión simulada. |
 | `test_main.py` | Endpoint raíz y esquema OpenAPI. |
+| `test_actions.py` | Registro y consulta histórica de acciones preventivas (POST y GET `/api/actions`), validación de tipos y manejo de errores ante caídas de la base de datos. |
+| `test_auth.py` | Autenticación con contraseñas bcrypt, ciclo de vida de tokens JWT, control de acceso por rol o comercio y endpoints de login y sesión actual (`/api/auth/login`, `/api/auth/me`). |
+| `test_calendar_service_unit.py` | Lógica unitaria del servicio de agenda, perfiles del simulador de turnos, antelación, cálculo de diagnósticos e integración con la base o CSV. |
+| `test_data_pipeline.py` | Funciones auxiliares del pipeline (hashing SHA-256 con salt, parseo de fechas, zonas horarias, extracción de nombres de imagen) y preprocesamiento de datos para entrenamiento. |
+| `test_db_roles.py` | Validación de nombres de roles de PostgreSQL, aprovisionamiento y asignación idempotente de privilegios mínimos para el rol de aplicación. |
+| `test_deploy_config.py` | Configuración de despliegue en `docker-compose.yml` (puertos expuestos, perfiles, nombres de contenedores e imagen) y reglas de proxy inverso en `Caddyfile`. |
+| `test_export.py` | Generación y exportación de turnos a CSV (GET `/api/export`), validación de rangos de fechas, formateo de celdas y acciones sugeridas. |
+| `test_init_db.py` | Esquema relacional de la base de datos, claves foráneas, datos semilla de barberos y servicios sin columnas de datos personales e ingesta de datos. |
+| `test_privacy.py` | Búsqueda por teléfono o hash, registro de solicitudes de no contacto y derecho al olvido/supresión (Ley 25.326), anonimización y consistencia en agenda y colas. |
+| `test_retrain_model.py` | Pipeline de reentrenamiento periódico del modelo, calibración de probabilidades con regresión isotónica, validación temporal y actualización atómica del artefacto serializado. |
+| `test_schemas.py` | Validación y serialización de contratos DTO con Pydantic v2 (esquemas de agenda, colas, acciones preventivas y privacidad). |
 
 ---
 
@@ -358,7 +387,7 @@ Ctrl + C
 ```
 
 ### 2. Apagar los Contenedores Docker (PostgreSQL + Backend FastAPI)
-Desde la raíz del proyecto (`pfi/`), ejecutá:
+Desde la raíz del proyecto (`turnofiel/`), ejecutá:
 ```bash
 docker compose stop    # pausa los contenedores sin perder nada
 docker compose down    # elimina los contenedores; la base de datos se conserva en el volumen pgdata
