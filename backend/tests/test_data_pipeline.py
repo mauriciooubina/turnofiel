@@ -45,6 +45,16 @@ def test_hash_sensitive_data():
     for invalid in [None, "", "   ", "nan", "NaN", "NULL", "None", "null"]:
         assert pd.isna(utils.hash_sensitive_data(invalid, salt_a))
 
+    # extract_image_filename: solo el nombre de archivo, sin dominio ni token
+    signed = "https://abc.supabase.co/storage/v1/object/sign/services/corte.png?token=eyJhbGciOi.x.y"
+    public = "https://abc.supabase.co/storage/v1/object/public/services/corte_barba.jpeg"
+    assert utils.extract_image_filename(signed) == "corte.png"
+    assert utils.extract_image_filename(public) == "corte_barba.jpeg"
+    assert utils.extract_image_filename("ninos.png") == "ninos.png"
+    assert pd.isna(utils.extract_image_filename(None))
+    assert pd.isna(utils.extract_image_filename(np.nan))
+    assert pd.isna(utils.extract_image_filename("   "))
+
 
 def test_get_crypto_salt(monkeypatch):
     # Con la variable de entorno seteada → devuelve el salt
