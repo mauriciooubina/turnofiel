@@ -366,8 +366,8 @@ docker compose run --rm tools pytest backend/tests -q
 | `test_deploy_config.py` | Configuración de despliegue en `docker-compose.yml` (puertos expuestos, perfiles, nombres de contenedores e imagen) y reglas de proxy inverso en `Caddyfile`. |
 | `test_export.py` | Generación y exportación de turnos a CSV (GET `/api/export`), validación de rangos de fechas, formateo de celdas y acciones sugeridas. |
 | `test_init_db.py` | Esquema relacional de la base de datos, claves foráneas, datos semilla de barberos y servicios sin columnas de datos personales e ingesta de datos. |
-| `test_privacy.py` | Búsqueda por teléfono o hash, registro de solicitudes de no contacto y derecho al olvido/supresión (Ley 25.326), anonimización y consistencia en agenda y colas. |
-| `test_retrain_model.py` | Pipeline de reentrenamiento periódico del modelo, calibración de probabilidades con regresión isotónica, validación temporal y actualización atómica del artefacto serializado. |
+| `test_privacy.py` | Búsqueda por teléfono o hash, registro de solicitudes de no contacto y derecho al olvido/supresión (Ley 25.326), enmascarado de los clientes suprimidos y consistencia en agenda y colas. |
+| `test_retrain_model.py` | Reentrenamiento: carga del dataset desde CSV o PostgreSQL, exclusión de clientes con solicitud de supresión, validación del dataset, bandas de riesgo y resumen de calibración por sucursal, y que sin `--promote` el modelo productivo no se reemplace (con `--promote`, respaldo y reemplazo). |
 | `test_schemas.py` | Validación y serialización de contratos DTO con Pydantic v2 (esquemas de agenda, colas, acciones preventivas y privacidad). |
 
 ---
