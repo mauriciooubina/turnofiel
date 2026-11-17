@@ -13,6 +13,13 @@ def test_docker_compose_config():
     assert "443:443" in content
     assert "profiles:" in content
     assert "APP_DB_PASS" in content
+    assert "container_name: turnofiel_backend" in content
+    assert "image: turnofiel-backend:local" in content
+    assert "pfi-postgres" not in content
+    assert "pfi_backend" not in content
+    assert "pfi_caddy" not in content
+    assert "pfi-backend:local" not in content
+    assert "version:" not in content
 
 
 def test_caddyfile_config():

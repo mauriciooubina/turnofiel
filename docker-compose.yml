@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
-    container_name: pfi-postgres
+    container_name: turnofiel-postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-pfi_db}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -13,11 +11,11 @@ services:
     restart: always
 
   backend:
-    image: pfi-backend:local
+    image: turnofiel-backend:local
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: pfi_backend
+    container_name: turnofiel_backend
     volumes:
       - .:/app
     environment:
@@ -37,7 +35,7 @@ services:
     restart: always
 
   tools:
-    image: pfi-backend:local
+    image: turnofiel-backend:local
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -67,7 +65,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: pfi_caddy
+    container_name: turnofiel_caddy
     ports:
       - "80:80"
       - "443:443"
