@@ -11,14 +11,16 @@ try:
         get_crypto_salt,
         hash_sensitive_data,
         safe_parse_datetime,
-        make_tz_naive
+        make_tz_naive,
+        extract_image_filename
     )
 except ImportError:
     from utils import (
         get_crypto_salt,
         hash_sensitive_data,
         safe_parse_datetime,
-        make_tz_naive
+        make_tz_naive,
+        extract_image_filename
     )
 
 
@@ -147,6 +149,8 @@ def run_etl(raw_data_dir: str, processed_data_dir: str):
             'price': 'service_price',
             'image': 'service_image'
         })
+        if 'service_image' in df_services_renamed.columns:
+            df_services_renamed['service_image'] = df_services_renamed['service_image'].apply(extract_image_filename)
         df_ml = df_ml.merge(df_services_renamed, on='service_id', how='left')
 
         df_barbers_renamed = df_barbers.rename(columns={

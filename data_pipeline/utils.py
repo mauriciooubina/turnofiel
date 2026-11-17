@@ -1,5 +1,6 @@
 import os
 import hashlib
+import urllib.parse
 import pandas as pd
 import numpy as np
 
@@ -75,3 +76,13 @@ def make_tz_naive(series: pd.Series) -> pd.Series:
     except Exception as e:
         print(f"[Warning] Error converting to timezone-naive: {e}")
     return series
+
+
+def extract_image_filename(value):
+    """Devuelve solo el nombre de archivo de una URL de imagen (sin dominio, ruta ni query string)."""
+    if value is None or pd.isna(value) or not str(value).strip():
+        return np.nan
+    path = urllib.parse.urlsplit(str(value).strip()).path
+    name = path.rstrip("/").split("/")[-1]
+    return name if name else np.nan
+
